@@ -695,7 +695,8 @@ html, body {
   .btn-imprimir,
   .gafete-lanyard,
   .card-title,
-  .dashboard-left {
+  .dashboard-left,
+  body > :not(.portal-wrapper) {
     display: none !important;
   }
 
@@ -736,8 +737,8 @@ html, body {
   }
 
   .gafete {
-    width: 7.62cm !important;
-    height: 10.16cm !important;
+    width: 5.4cm !important;
+    height: 8.6cm !important;
     box-sizing: border-box !important;
     border-radius: 0 !important;
     box-shadow: none !important;
@@ -752,7 +753,7 @@ html, body {
   }
 
   .gafete-top {
-    padding: 0.3cm 0.4cm 0.25cm !important;
+    padding: 0.2cm 0.3cm 0.15cm !important;
     flex-shrink: 0 !important;
     background-color: #0d0d0f !important;
     background-image: linear-gradient(#0d0d0f, #0d0d0f) !important;
@@ -763,11 +764,11 @@ html, body {
   }
 
   .gafete-logo {
-    height: 1.1cm !important;
+    height: 0.9cm !important;
   }
 
   .gafete-evento {
-    font-size: 6pt !important;
+    font-size: 5pt !important;
     letter-spacing: 0.08em !important;
     color: var(--acento) !important;
     -webkit-print-color-adjust: exact !important;
@@ -782,17 +783,17 @@ html, body {
   }
 
   .gafete-body {
-    padding: 0.25cm 0.4cm 0.2cm !important;
+    padding: 0.2cm 0.3cm 0.15cm !important;
     flex: 1 !important;
     display: flex !important;
     flex-direction: column !important;
   }
 
   .gafete-nombre {
-    font-size: 14pt !important;
+    font-size: 9.5pt !important;
     font-weight: 900 !important;
-    line-height: 1.15 !important;
-    margin-bottom: 0.15cm !important;
+    line-height: 1.1 !important;
+    margin-bottom: 0.1cm !important;
     color: #000 !important;
   }
 
@@ -810,8 +811,8 @@ html, body {
   }
 
   .gafete-taller-nombre {
-    font-size: 7.5pt !important;
-    line-height: 1.3 !important;
+    font-size: 5.5pt !important;
+    line-height: 1.2 !important;
     flex: 1 !important;
   }
 
@@ -829,8 +830,8 @@ html, body {
   }
 
   .gafete-qr-small img {
-    width: 2.8cm !important;
-    height: 2.8cm !important;
+    width: 1.9cm !important;
+    height: 1.9cm !important;
   }
 
   .gafete-id-label {
@@ -839,7 +840,7 @@ html, body {
   }
 
   .gafete-id-value {
-    font-size: 10pt !important;
+    font-size: 8pt !important;
     color: #000 !important;
     text-align: center !important;
   }
