@@ -834,17 +834,17 @@ html, body {
   }
 
   .gafete-qr-small img {
-    width: 1.6cm !important;
-    height: 1.6cm !important;
+    width: 2.5cm !important;
+    height: 2.5cm !important;
   }
 
   .gafete-id-label {
-    font-size: 4.5pt !important;
+    font-size: 5pt !important;
     text-align: right !important;
   }
 
   .gafete-id-value {
-    font-size: 7.5pt !important;
+    font-size: 8.5pt !important;
     color: #000 !important;
     text-align: right !important;
   }
