@@ -731,7 +731,7 @@ html, body {
 
   .gafete-corte {
     border: 1.5pt dashed #999 !important;
-    padding: 4mm !important;
+    padding: 0 !important;
     display: inline-block !important;
   }
 
