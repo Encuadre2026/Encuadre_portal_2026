@@ -115,13 +115,9 @@ html, body {
   border-radius: var(--radio);
   padding: 28px;
   box-shadow: var(--sombra);
+  margin-bottom: 24px;
 }
 
-.card + .card,
-.card + .upload-section,
-.upload-section + .card {
-  margin-top: 20px;
-}
 
 .card-title {
   font-size: 11px;
@@ -826,14 +822,9 @@ html, body {
   }
 
   .countdown-wrapper,
-  .upload-section {
+  .upload-section,
+  .card {
     margin-bottom: 32px;
-  }
-
-  .card + .card,
-  .card + .upload-section,
-  .upload-section + .card {
-    margin-top: 32px;
   }
 
   .card {
