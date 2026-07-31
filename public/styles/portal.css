@@ -753,7 +753,8 @@ html, body {
   }
 
   .gafete-top {
-    padding: 0.2cm 0.3cm 0.15cm !important;
+    padding: 0.15cm 0.2cm 0.1cm !important;
+    gap: 0.1cm !important;
     flex-shrink: 0 !important;
     background-color: #0d0d0f !important;
     background-image: linear-gradient(#0d0d0f, #0d0d0f) !important;
@@ -764,12 +765,12 @@ html, body {
   }
 
   .gafete-logo {
-    height: 0.9cm !important;
+    height: 0.75cm !important;
   }
 
   .gafete-evento {
-    font-size: 5pt !important;
-    letter-spacing: 0.08em !important;
+    font-size: 4.5pt !important;
+    letter-spacing: 0.05em !important;
     color: var(--acento) !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
@@ -783,66 +784,69 @@ html, body {
   }
 
   .gafete-body {
-    padding: 0.2cm 0.3cm 0.15cm !important;
+    padding: 0.15cm 0.25cm 0.15cm !important;
     flex: 1 !important;
     display: flex !important;
     flex-direction: column !important;
   }
 
   .gafete-nombre {
-    font-size: 9.5pt !important;
+    font-size: 8.5pt !important;
     font-weight: 900 !important;
     line-height: 1.1 !important;
-    margin-bottom: 0.1cm !important;
+    margin-bottom: 0.05cm !important;
     color: #000 !important;
   }
 
   .gafete-perfil-badge {
-    font-size: 6pt !important;
-    padding: 2pt 6pt !important;
-    margin-bottom: 0.2cm !important;
+    font-size: 5pt !important;
+    padding: 1.5pt 5pt !important;
+    margin-bottom: 0.15cm !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     align-self: flex-start !important;
   }
 
   .gafete-taller-label {
-    font-size: 6pt !important;
+    font-size: 5pt !important;
   }
 
   .gafete-taller-nombre {
-    font-size: 5.5pt !important;
-    line-height: 1.2 !important;
-    flex: 1 !important;
+    font-size: 5pt !important;
+    line-height: 1.15 !important;
+    flex: 0 1 auto !important;
   }
 
   .gafete-footer {
-    padding-top: 0.2cm !important;
-    gap: 0.15cm !important;
+    padding-top: 0.15cm !important;
+    margin-top: auto !important;
     border-top: 0.5pt solid #ddd !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
   }
 
   .gafete-qr-small {
-    padding: 4pt !important;
+    padding: 2pt !important;
     border: 0.5pt solid #ccc !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
   .gafete-qr-small img {
-    width: 1.9cm !important;
-    height: 1.9cm !important;
+    width: 1.6cm !important;
+    height: 1.6cm !important;
   }
 
   .gafete-id-label {
-    font-size: 5.5pt !important;
-    text-align: center !important;
+    font-size: 4.5pt !important;
+    text-align: right !important;
   }
 
   .gafete-id-value {
-    font-size: 8pt !important;
+    font-size: 7.5pt !important;
     color: #000 !important;
-    text-align: center !important;
+    text-align: right !important;
   }
 }
 
