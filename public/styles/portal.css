@@ -218,6 +218,7 @@ html, body {
   height: 14px;
   border-radius: 50%;
   position: relative;
+  flex-shrink: 0;
 }
 .estado-indicador::after {
   content: '';
