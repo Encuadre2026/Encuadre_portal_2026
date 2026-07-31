@@ -127,7 +127,7 @@
       }
 
       // Countdown block
-      const countdownHtml = (!aprobado && p.fecha_expiracion) ? `
+      const countdownHtml = (!aprobado && !tieneComp && p.fecha_expiracion) ? `
         <div class="countdown-card">
           <div class="countdown-label">Tiempo restante para subir tu comprobante</div>
           <div id="cd-inner"></div>
@@ -315,7 +315,7 @@
           ${uploadHtml}
         `;
 
-        if (p.fecha_expiracion) iniciarCountdown(p.fecha_expiracion);
+        if (!tieneComp && p.fecha_expiracion) iniciarCountdown(p.fecha_expiracion);
         setupUpload(p.id_participante);
       }
     }
