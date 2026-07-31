@@ -736,9 +736,8 @@ html, body {
   }
 
   .gafete {
-    width: 7.5cm !important;
-    min-height: 10.5cm !important;
-    height: auto !important;
+    width: 7.62cm !important;
+    height: 10.16cm !important;
     box-sizing: border-box !important;
     border-radius: 0 !important;
     box-shadow: none !important;
