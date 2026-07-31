@@ -799,6 +799,7 @@ html, body {
 @media (max-width: 600px) {
   .datos-grid {
     grid-template-columns: 1fr;
+    gap: 24px;
   }
 
   .countdown-num {
@@ -813,7 +814,30 @@ html, body {
   }
 
   .portal-main {
-    padding: 24px 16px 60px;
+    padding: 32px 16px 80px;
+  }
+
+  .estado-banner {
+    padding: 24px 16px;
+    margin-bottom: 32px;
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .countdown-wrapper,
+  .upload-section {
+    margin-bottom: 32px;
+  }
+
+  .card + .card,
+  .card + .upload-section,
+  .upload-section + .card {
+    margin-top: 32px;
+  }
+
+  .card {
+    padding: 28px 20px;
   }
 
   .gafete {
@@ -822,9 +846,5 @@ html, body {
 
   .gafete-nombre {
     font-size: 18px;
-  }
-
-  .card {
-    padding: 20px;
   }
 }
