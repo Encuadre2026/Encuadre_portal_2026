@@ -696,8 +696,25 @@ html, body {
   .gafete-lanyard,
   .card-title,
   .dashboard-left,
-  body > :not(.portal-wrapper) {
+  body > :not(.portal-wrapper),
+  #goog-gt-tt,
+  .skiptranslate,
+  .goog-te-banner-frame,
+  [id^="google_translate"],
+  [id^="translator-"],
+  [class^="translator-"],
+  #edge-translate-panel,
+  edge-translate-extension {
     display: none !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .gafete-print-section,
+  .gafete-print-section * {
+    visibility: visible !important;
   }
 
   .dashboard-layout {
@@ -721,6 +738,9 @@ html, body {
     border: none !important;
     box-shadow: none !important;
     background: transparent !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
   }
 
   .gafete-preview-wrapper {
