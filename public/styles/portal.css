@@ -694,8 +694,13 @@ html, body {
   .toast-container,
   .btn-imprimir,
   .gafete-lanyard,
-  .card-title {
+  .card-title,
+  .dashboard-left {
     display: none !important;
+  }
+
+  .dashboard-layout {
+    display: block !important;
   }
 
   body, html, .portal-wrapper {
