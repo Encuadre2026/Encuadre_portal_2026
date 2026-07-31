@@ -695,7 +695,8 @@ html, body {
   .btn-imprimir,
   .gafete-lanyard,
   .card-title,
-  .dashboard-left {
+  .dashboard-left,
+  body > :not(.portal-wrapper) {
     display: none !important;
   }
 
