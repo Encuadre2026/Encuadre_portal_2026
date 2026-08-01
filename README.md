@@ -1,88 +1,88 @@
-# 🎓 Portal del Participante — 36 FTD Encuadre 2026
+# Portal del Participante — 36 FTD Encuadre 2026
 
-Portal web oficial para los participantes del **36 Encuentro Nacional de Escuelas de Diseño Gráfico (Encuadre 2026)** con sede en Aguascalientes. Desarrollado con **Astro 7 + TypeScript** para un rendimiento ultrarrápido, alta seguridad, diseño dinámico y despliegue automatizado a través de GitHub Pages.
+Portal web oficial para los participantes del 36 Encuentro Nacional de Escuelas de Diseño Gráfico (Encuadre 2026) con sede en Aguascalientes. Sistema desarrollado con Astro 7 y TypeScript para ofrecer un alto rendimiento, seguridad web mejorada y despliegue automatizado mediante GitHub Pages.
 
 ---
 
-## ✨ Funcionalidades y Optimizaciones Principales
+## Funcionalidades y Optimizaciones Principales
 
-- **Consulta de Estado del Registro**: Visualización modular y en tiempo real de la situación del participante:
-  - 🟠 **Pendiente de Comprobante**: Muestra un temporizador (cuenta regresiva) en vivo hasta el vencimiento para subir el pago.
-  - 🔵 **En Revisión**: El comprobante fue recibido exitosamente y está siendo verificado por el equipo administrativo.
-  - 🟢 **Pago Aprobado**: Habilita la descarga de códigos QR y el gafete virtual oficial para acceso al evento.
+- **Consulta de Estado del Registro**: Visualización modular en tiempo real de la situación administrativa del participante:
+  - **Pendiente de Comprobante**: Muestra un temporizador en vivo indicando la cuenta regresiva hasta el vencimiento para adjuntar el pago.
+  - **En Revisión**: Confirma la recepción exitosa del comprobante digital y su verificación en proceso por el equipo administrativo.
+  - **Pago Aprobado**: Habilita la descarga oficial del código QR y del gafete virtual para el acceso al evento.
 - **Carga Eficiente de Comprobantes PDF (FormData)**:
-  - Soporte de *drag & drop* (arrastrar y soltar) con validación de tipo y peso (máximo 3 MB).
-  - **Barra de Progreso Visual**: Animación neón fluida e indicación del porcentaje en vivo por red (`XMLHttpRequest`).
-  - **Transición Sin Recargas (UX)**: Al completar la subida de un comprobante, el portal realiza una transición difumada hacia la vista *"En Revisión"* sin forzar recargas bruscas del navegador (`location.reload`).
-  - **Transmisión Ligera**: El archivo PDF se transmite en formato crudo **FormData** (multipart), ahorrando 33% de ancho de banda y recursos de CPU frente a sistemas Base64 tradicionales.
-- **Generación Local de Códigos QR**: Los códigos QR de acceso se generan local y asíncronamente en memoria usando la librería `qrcode`, eliminando la dependencia de servidores API externos de terceros.
-- **Gafete Virtual e Imprimible**: Plantilla calibrada para impresión directa en papel o exportación a PDF, con cortes y colores de perfil personalizados.
-- **Seguridad Web (XSS) y Accesibilidad (a11y)**:
-  - Sanitización en vivo de parámetros y respuestas del servidor mediante la utilidad `escapeHTML()`.
-  - Atributos estándar WAI-ARIA para lectores de pantalla y soporte de navegación con teclado (focos visibles y disparo por teclas *Enter/Espacio*).
-- **Código en Español**: Todo el código web, funciones, variables y comentarios están escritos en un español claro, conciso y técnico para facilitar el trabajo colaborativo de todo el equipo de desarrollo.
+  - Interfaz con soporte para arrastrar y soltar (drag and drop) con validación de formato y tamaño (máximo 3 MB).
+  - **Barra de Progreso Visual**: Animación fluida e indicación del porcentaje transferido en tiempo real vía red (XMLHttpRequest).
+  - **Transición sin Recarga (UX)**: Al concluir exitosamente la subida de un comprobante, el sistema transita suavemente a la vista "En Revisión" sin ejecutar recargas bruscas en el navegador (location.reload).
+  - **Transmisión Eficiente**: El archivo PDF viaja en formato crudo FormData (multipart/form-data), ahorrando hasta un 33% de ancho de banda y recursos de procesamiento respecto a envíos en Base64.
+- **Generación Local de Códigos QR**: Los códigos QR de acceso se generan local y asíncronamente en la memoria del navegador utilizando la librería especializada qrcode, eliminando peticiones externas a servidores de terceros.
+- **Gafete Virtual e Imprimible**: Plantilla calibrada y formateada mediante reglas CSS Print para su impresión directa en papel o exportación a documento PDF, integrando guías de corte e indicadores cromáticos por perfil.
+- **Seguridad Web y Accesibilidad**:
+  - Sanitización estricta de parámetros en la URL y respuestas de la API mediante la utilidad de prevención XSS (escapeHTML).
+  - Integración de atributos estándar WAI-ARIA para lectores de pantalla y soporte completo para navegación asistida por teclado.
+- **Estándar de Código en Español**: La arquitectura, variables, funciones y comentarios explicativos están redactados íntegramente en español técnico y claro para optimizar el mantenimiento y la colaboración en equipo.
 
 ---
 
-## 🏛️ Estructura de la Arquitectura Modular
+## Estructura y Arquitectura Modular
 
 ```text
 /
-├── .github/workflows/         # Automatización CI/CD para despliegue continuo en GitHub Pages
+├── .github/workflows/         # Automatización de integración y despliegue (CI/CD)
 ├── public/                    # Activos estáticos
 │   ├── fuentes/               # Tipografía local oficial Montserrat optimizada (WOFF2)
-│   └── ...                    # Logotipos e iconos del evento
+│   └── ...                    # Logotipos y recursos gráficos del evento
 ├── src/
-│   ├── components/            # Componentes reutilizables de Astro
-│   │   ├── Header.astro           # Cabecera superior con identidades de marca
-│   │   └── Spinner.astro          # Indicador rotativo de carga (accesible y animado)
-│   ├── layouts/               # Plantillas de enmascarado global
-│   │   └── Layout.astro           # Esqueleto HTML5, metadatos SEO y contenedor Toast
-│   ├── pages/                 # Rutas públicas del portal
-│   │   ├── index.astro            # Redirección inteligente de entrada
-│   │   └── mi-registro.astro      # Controlador liviano (<50 líneas) de la vista principal
-│   ├── styles/                # Sistema de diseño
-│   │   └── portal.css             # Hoja de estilos única unificada (Glassmorphism, Neon Glow y Modo Print)
-│   └── utils/                 # Módulos de lógica en TypeScript
-│       ├── portal.ts              # Tipado estricto, sanitización XSS, progreso de red y temporizadores
-│       └── vistas.ts              # Generador de templates HTML, controladores de eventos y transiciones UX
-├── .env.example               # Plantilla documentada de variables de entorno para desarrollo
-├── astro.config.mjs           # Configuración del compilador estático (GitHub Pages / Vite)
-└── package.json               # Dependencias (Astro, TypeScript, QRCode)
+│   ├── components/            # Componentes reutilizables de la interfaz en Astro
+│   │   ├── Header.astro           # Cabecera superior con identidades gráficas oficiales
+│   │   └── Spinner.astro          # Indicador rotativo de carga con soporte de accesibilidad
+│   ├── layouts/               # Plantillas de estructura general
+│   │   └── Layout.astro           # Esqueleto HTML5, metadatos SEO y contenedor para alertas
+│   ├── pages/                 # Enrutamiento público del portal
+│   │   ├── index.astro            # Redirección de entrada al dashboard
+│   │   └── mi-registro.astro      # Controlador ligero de la vista principal del participante
+│   ├── styles/                # Sistema unified de diseño
+│   │   └── portal.css             # Hoja de estilos única (Glassmorphism, variables HSL y Modo Print)
+│   └── utils/                 # Módulos de lógica y tipado en TypeScript
+│       ├── portal.ts              # Definiciones de interfaces, sanitización XSS y red
+│       └── vistas.ts              # Controladores del DOM, transiciones de estado y eventos
+├── .env.example               # Plantilla documentada de variables de entorno
+├── astro.config.mjs           # Configuración de compilación para entorno estático
+└── package.json               # Configuración de scripts y dependencias oficiales
 ```
 
 ---
 
-## 💻 Comandos de Consola y Desarrollo
+## Comandos de Construcción y Desarrollo
 
-Sitúa tu terminal dentro de la carpeta del proyecto para usar las herramientas de construcción:
+Los siguientes comandos deben ejecutarse desde la terminal situada en el directorio raíz del proyecto:
 
-| Comando | Acción |
+| Comando | Descripción |
 | :--- | :--- |
-| `npm install` | Instala todas las dependencias del proyecto de forma reproducible |
-| `npm run dev` | Inicia el servidor local en vivo (usualmente en `http://localhost:4321`) |
-| `npm run build` | Valida el tipado TypeScript y compila el paquete de producción en `./dist/` |
-| `npm run preview` | Previsualiza en un servidor local el empaquetado de producción resultante |
+| `npm install` | Instala las dependencias del proyecto y genera el árbol de paquetes |
+| `npm run dev` | Inicia el servidor de desarrollo local de forma interactiva (`http://localhost:4321`) |
+| `npm run build` | Ejecuta la validación estricta de TypeScript y compila los activos finales en `./dist/` |
+| `npm run preview` | Permite verificar de manera local el comportamiento de los archivos compilados en producción |
 
 ---
 
-## ☁️ Integración con el Backend (Cloudflare Workers)
+## Integración con Backend en la Nube
 
-Este portal consulta y envía documentos a una API REST sin servidor gestionada en **Cloudflare Workers**, emparejada con Cloudflare D1 (Base de datos) y Cloudflare R2 (Almacenamiento de archivos PDF).
+Este proyecto interactúa directamente con una arquitectura sin servidor desplegada en Cloudflare Workers, apoyada por una base de datos relacional Cloudflare D1 y almacenamiento para documentos de pago en Cloudflare R2.
 
-### Configurar entornos de desarrollo locales:
-1. Duplica el archivo `.env.example` en la raíz con el nombre `.env`.
-2. Modifica el parámetro `PUBLIC_API_BASE` hacia la URL del servidor local de pruebas:
+### Configuración para pruebas en desarrollo:
+1. Copia el archivo `.env.example` del directorio raíz con el nombre `.env`.
+2. Asigna al valor de `PUBLIC_API_BASE` la dirección de tu servidor de pruebas o entorno local:
    ```env
    PUBLIC_API_BASE=http://localhost:8787
    ```
-*(Nota: Si el archivo `.env` no existe o no se declara al desplegar, el sistema asumirá automáticamente y de forma segura el endpoint oficial de producción en la nube).*
+*(Nota: En ausencia de la variable o en despliegues automatizados de producción, el sistema resolverá de forma predeterminada al endpoint oficial del evento).*
 
 ---
 
-## 🤝 Compatibilidad en el Ecosistema Encuadre 2026
+## Compatibilidad en el Ecosistema Encuadre 2026
 
-La arquitectura de este portal se mantiene sincronizada con los demás repositorios hermanos:
-- `Encuadre_2026`: Mantiene las rutas url receptoras para los enlaces originados desde correos automatizados (Brevo).
-- `app-qr`: Los códigos QR locales generan cadenas exactas y compatibles con el sistema de escaneo del evento.
-- `Encuadre_Admin_2026`: El envío multipart FormData guarda documentos limpios y legibles inmediatamente por los moderadores y auditores del evento.
+La estructura de este repositorio mantiene interoperabilidad estricta con los sistemas complementarios del congreso:
+- **Encuadre_2026**: Compatible con las redirecciones del sistema automatizado de correos electrónicos (Brevo) hacia las vistas del portal.
+- **app-qr**: Las cadenas cifradas generadas localmente por los códigos QR corresponden de manera exacta al protocolo esperado por la aplicación de control de acceso física.
+- **Encuadre_Admin_2026**: Los archivos subidos vía FormData se indexan e interpretan íntegramente de forma legible por los administradores del evento a través del panel de control oficial.
