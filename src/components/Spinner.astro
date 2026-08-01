@@ -1,0 +1,12 @@
+---
+// Componente de estado de carga inicial (spinner) con soporte para accesibilidad (a11y)
+export interface Props {
+  texto?: string;
+}
+
+const { texto = "Cargando tu registro..." } = Astro.props;
+---
+<div class="estado-loading" role="status" aria-busy="true" aria-label={texto}>
+  <div class="spinner"></div>
+  <p>{texto}</p>
+</div>

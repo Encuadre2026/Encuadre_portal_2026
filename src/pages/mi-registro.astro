@@ -1,418 +1,54 @@
 ---
-// Portal del Participante — Encuadre 2026
+// Portal del Participante — Vista Principal
 // Acceso: /mi-registro?id=ENC-XXX
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Spinner from '../components/Spinner.astro';
 ---
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mi Registro — 36 FTD Encuadre 2026</title>
-  <meta name="description" content="Consulta el estado de tu registro, descarga tu QR e imprime tu gafete para el 36 FTD Encuadre 2026." />
-  <meta name="robots" content="noindex, nofollow" />
-  <link rel="icon" href={import.meta.env.BASE_URL + "/logo_futurologia_encuadre.png"} />
-  <link rel="stylesheet" href={import.meta.env.BASE_URL + "/styles/portal.css?v=12"} />
-</head>
-<body>
-  <div class="portal-wrapper">
+<Layout title="Mi Registro — 36 FTD Encuadre 2026" noindex={true}>
+  <Header />
+  <main class="portal-main" id="portal-main">
+    <Spinner texto="Cargando tu registro..." />
+  </main>
+</Layout>
 
-    <header class="portal-header">
-      <div class="header-brand">
-        <img src={import.meta.env.BASE_URL + "/logo_3.webp"} alt="36 Encuentro" class="logo-header" />
-        <div class="portal-header-sep"></div>
-        <img src={import.meta.env.BASE_URL + "/logo_futurologia_encuadre.png"} alt="Futurologia Encuadre" class="logo-titulo-nav" />
-        <div class="portal-header-text-block">
-          <div class="portal-header-label">Portal del Participante</div>
-          <div class="portal-header-sub">36 FTD Encuadre 2026</div>
-        </div>
-      </div>
-    </header>
+<script>
+  import { escapeHTML } from '../utils/portal';
+  import { renderError, renderPortal } from '../utils/vistas';
 
-    <main class="portal-main" id="portal-main">
-      <div class="estado-loading">
-        <div class="spinner"></div>
-        <p>Cargando tu registro...</p>
-      </div>
-    </main>
+  // Configuración de endpoint para consulta de registros
+  const API_BASE = import.meta.env.PUBLIC_API_BASE || 'https://encuadre-2026-api.sitio-392.workers.dev';
+  const BASE_URL = import.meta.env.BASE_URL || '';
 
-    <div class="toast-container" id="toast-container"></div>
-
-  </div>
-
-  <script>
-    const API_BASE = 'https://encuadre-2026-api.sitio-392.workers.dev';
-    const QR_API  = 'https://api.qrserver.com/v1/create-qr-code/';
-
-    // ── Utilidades ──────────────────────────────────────────
-    function qrUrl(valor, size) {
-      return `${QR_API}?size=${size}x${size}&data=${encodeURIComponent(valor)}&bgcolor=ffffff&color=000000&margin=1`;
+  // ── Inicio de la aplicación en el navegador ──────────────────
+  async function init() {
+    const id = new URLSearchParams(window.location.search).get('id') || '';
+    if (!id) {
+      renderError(
+        'ID no proporcionado', 
+        'Usa el link que recibiste en tu correo de confirmacion. Busca el boton "Ver mi registro" y vuelve a intentarlo.'
+      );
+      return;
     }
-
-    function toast(msg, type = 'info', ms = 4500) {
-      const ct = document.getElementById('toast-container');
-      const el = document.createElement('div');
-      el.className = `toast ${type}`;
-      el.textContent = msg;
-      ct.appendChild(el);
-      setTimeout(() => el.remove(), ms);
-    }
-
-    function formatFecha(iso) {
-      if (!iso) return '—';
-      const d = new Date(iso.replace(' ', 'T') + 'Z');
-      return d.toLocaleDateString('es-MX', {
-        timeZone: 'America/Mexico_City',
-        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-      });
-    }
-
-    function perfilColor(perfil) {
-      return { Estudiante: '#0a84ff', Profesor: '#30d158', Profesional: '#ff9f0a', Investigador: '#bf5af2' }[perfil] || '#6b7280';
-    }
-
-    // ── Countdown ───────────────────────────────────────────
-    let cdInterval = null;
-
-    function iniciarCountdown(fechaSQL) {
-      const el = document.getElementById('cd-inner');
-      if (!el) return;
-
-      function tick() {
-        const diff = new Date(fechaSQL.replace(' ', 'T') + 'Z').getTime() - Date.now();
-        if (diff <= 0) {
-          clearInterval(cdInterval);
-          el.innerHTML = `<p class="countdown-expired">El plazo ha vencido. Contactanos a la brevedad para conservar tu lugar.</p>`;
-          return;
-        }
-        const d = String(Math.floor(diff / 86400000)).padStart(2, '0');
-        const h = String(Math.floor((diff / 3600000) % 24)).padStart(2, '0');
-        const m = String(Math.floor((diff / 60000) % 60)).padStart(2, '0');
-        const s = String(Math.floor((diff / 1000) % 60)).padStart(2, '0');
-        el.innerHTML = `
-          <div class="countdown-digits">
-            <div class="countdown-unit"><div class="countdown-num">${d}</div><div class="countdown-lbl">dias</div></div>
-            <div class="countdown-sep">:</div>
-            <div class="countdown-unit"><div class="countdown-num">${h}</div><div class="countdown-lbl">horas</div></div>
-            <div class="countdown-sep">:</div>
-            <div class="countdown-unit"><div class="countdown-num">${m}</div><div class="countdown-lbl">min</div></div>
-            <div class="countdown-sep">:</div>
-            <div class="countdown-unit"><div class="countdown-num">${s}</div><div class="countdown-lbl">seg</div></div>
-          </div>`;
-      }
-      tick();
-      cdInterval = setInterval(tick, 1000);
-    }
-
-    // ── Render principal ────────────────────────────────────
-    function renderPortal(p) {
-      const main = document.getElementById('portal-main');
-      const aprobado       = p.pago_aprobado == 1;
-      const tieneComp      = p.tiene_comprobante == 1;
-      const color          = perfilColor(p.perfil);
-
-      // Estado
-      let estadoClase, estadoTitulo, estadoDesc;
-      if (aprobado) {
-        estadoClase = 'aprobado';
-        estadoTitulo = 'Pago Aprobado';
-        estadoDesc   = 'Tu lugar esta confirmado. Puedes descargar tu QR e imprimir tu gafete.';
-      } else if (tieneComp) {
-        estadoClase = 'revision';
-        estadoTitulo = 'En Revision';
-        estadoDesc   = 'Recibimos tu comprobante. Nuestro equipo lo esta verificando.';
-      } else {
-        estadoClase = 'pendiente';
-        estadoTitulo = 'Pendiente de Comprobante';
-        estadoDesc   = 'Debes subir tu comprobante de pago para asegurar tu lugar.';
-      }
-
-      // Countdown block
-      const countdownHtml = (!aprobado && !tieneComp && p.fecha_expiracion) ? `
-        <div class="countdown-wrapper">
-          <div class="countdown-label">Tiempo restante para subir tu comprobante</div>
-          <div id="cd-inner"></div>
-        </div>` : '';
-
-      // Upload block
-      let uploadHtml = '';
-      if (!aprobado) {
-        if (tieneComp) {
-          uploadHtml = `
-            <div class="card upload-section">
-              <p class="card-title">Comprobante de pago</p>
-              <div class="upload-ya-enviado" style="margin:0; text-align:center; padding: 20px;">
-                <strong>Comprobante recibido exitosamente.</strong><br><br>
-                Nuestro equipo está verificando tu pago. Te notificaremos por correo cuando sea aprobado.
-              </div>
-            </div>`;
-        } else {
-          uploadHtml = `
-            <div class="card upload-section">
-              <p class="card-title">Comprobante de pago</p>
-              <div class="upload-area" id="upload-area">
-                <input type="file" id="comp-input" accept="application/pdf" style="display:none" />
-                <svg class="upload-icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m6.75 12-3-3m0 0-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                </svg>
-                <p class="upload-text">Arrastra tu PDF aqui o haz clic para seleccionar</p>
-                <p class="upload-hint">Solo archivos PDF &bull; Maximo 3 MB</p>
-              </div>
-              <div id="file-info" style="display:none"></div>
-              <button class="btn btn-primary btn-full" id="btn-subir" disabled>Subir comprobante</button>
-              <p style="font-size:11px;color:#555;margin-top:10px;text-align:center">
-                Tambien puedes responder el correo de confirmacion adjuntando tu comprobante.
-              </p>
-            </div>`;
-        }
-      }
-
-      // QR e Información principal en Columna Izquierda, Gafete en la Derecha (si está aprobado)
-      if (aprobado) {
-        main.innerHTML = `
-          <div class="dashboard-layout">
-            
-            <!-- Columna Izquierda: Información de Registro & QR Acceso -->
-            <div class="dashboard-left">
-              <div class="estado-banner ${estadoClase}" style="margin-bottom: 24px;">
-                <div class="estado-indicador"></div>
-                <div class="estado-info">
-                  <div class="estado-titulo">${estadoTitulo}</div>
-                  <div class="estado-desc">${estadoDesc}</div>
-                </div>
-              </div>
-
-              <div class="card">
-                <p class="card-title">Datos de tu registro</p>
-                <div class="datos-grid">
-                  <div class="dato-item full">
-                    <span class="dato-label">Nombre completo</span>
-                    <span class="dato-valor">${p.nombre}</span>
-                  </div>
-                  <div class="dato-item">
-                    <span class="dato-label">ID de Participante</span>
-                    <span class="dato-valor id-participante">${p.id_participante}</span>
-                  </div>
-                  <div class="dato-item">
-                    <span class="dato-label">Perfil</span>
-                    <span class="dato-valor"><span class="perfil-badge ${p.perfil}">${p.perfil}</span></span>
-                  </div>
-                  <div class="dato-item full">
-                    <span class="dato-label">Taller asignado</span>
-                    <span class="dato-valor">${p.taller}</span>
-                  </div>
-                  <div class="dato-item">
-                    <span class="dato-label">Institucion</span>
-                    <span class="dato-valor">${p.institucion}</span>
-                  </div>
-                  <div class="dato-item">
-                    <span class="dato-label">Fecha de registro</span>
-                    <span class="dato-valor" style="font-size:13px">${formatFecha(p.fecha_registro)}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="card" style="margin-top: 24px;">
-                <p class="card-title">Codigo QR de acceso</p>
-                <div class="qr-wrapper">
-                  <div class="qr-img-box">
-                    <img id="qr-img" src="${qrUrl(p.id_participante, 280)}" alt="QR ${p.id_participante}" width="240" height="240" />
-                  </div>
-                  <div>
-                    <div class="qr-id-label">ID de participante</div>
-                    <div class="qr-id-value">${p.id_participante}</div>
-                  </div>
-                  <a class="btn btn-outline" href="${qrUrl(p.id_participante, 500)}" download="QR_${p.id_participante}.png" target="_blank">
-                    Descargar QR
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <!-- Columna Derecha: Gafete Virtual e Imprimible -->
-            <div class="dashboard-right">
-              <div class="card gafete-print-section" style="position: sticky; top: 110px;">
-                <p class="card-title">Tu gafete virtual</p>
-                
-                <div class="gafete-preview-wrapper">
-                  <div class="gafete-corte">
-                    <div class="gafete" style="border-top: 6px solid ${color}">
-                      <div class="gafete-lanyard"><div class="gafete-hole"></div></div>
-                      <div class="gafete-top">
-                        <img class="gafete-logo" src="${import.meta.env.BASE_URL}/logo_futurologia_encuadre.png" alt="Encuadre 2026" />
-                        <div class="gafete-evento">36 FTD &middot; Futurologia &middot; Encuadre</div>
-                        <div class="gafete-fecha">29, 30 y 31 de octubre de 2026 &middot; Aguascalientes</div>
-                      </div>
-                      <div class="gafete-body">
-                        <div class="gafete-nombre">${p.nombre}</div>
-                        <span class="gafete-perfil-badge" style="background:${color}">${p.perfil}</span>
-                        <div class="gafete-taller-label">Taller</div>
-                        <div class="gafete-taller-nombre">${p.taller}</div>
-                        <div class="gafete-footer">
-                          <div class="gafete-qr-small">
-                            <img src="${qrUrl(p.id_participante, 150)}" alt="QR ${p.id_participante}" width="100" height="100" />
-                          </div>
-                          <div>
-                            <div class="gafete-id-label">ID de Participante</div>
-                            <div class="gafete-id-value">${p.id_participante}</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div><!-- /gafete -->
-                  </div><!-- /gafete-corte -->
-                </div><!-- /gafete-preview-wrapper -->
-
-                <button class="btn btn-primary btn-full btn-imprimir" onclick="window.print()">
-                  Imprimir gafete
-                </button>
-              </div>
-            </div>
-
-          </div>
-        `;
-      } else {
-        // Si no está aprobado, se muestra la interfaz clásica de un solo lado para subir comprobantes
-        main.innerHTML = `
-          <div class="estado-banner ${estadoClase}" style="margin-bottom: 24px;">
-            <div class="estado-indicador"></div>
-            <div class="estado-info">
-              <div class="estado-titulo">${estadoTitulo}</div>
-              <div class="estado-desc">${estadoDesc}</div>
-            </div>
-          </div>
-
-          ${countdownHtml}
-
-          <div class="card">
-            <p class="card-title">Datos de tu registro</p>
-            <div class="datos-grid">
-              <div class="dato-item full">
-                <span class="dato-label">Nombre completo</span>
-                <span class="dato-valor">${p.nombre}</span>
-              </div>
-              <div class="dato-item">
-                <span class="dato-label">ID de Participante</span>
-                <span class="dato-valor id-participante">${p.id_participante}</span>
-              </div>
-              <div class="dato-item">
-                <span class="dato-label">Perfil</span>
-                <span class="dato-valor"><span class="perfil-badge ${p.perfil}">${p.perfil}</span></span>
-              </div>
-              <div class="dato-item full">
-                <span class="dato-label">Taller asignado</span>
-                <span class="dato-valor">${p.taller}</span>
-              </div>
-              <div class="dato-item">
-                <span class="dato-label">Institucion</span>
-                <span class="dato-valor">${p.institucion}</span>
-              </div>
-              <div class="dato-item">
-                <span class="dato-label">Fecha de registro</span>
-                <span class="dato-valor" style="font-size:13px">${formatFecha(p.fecha_registro)}</span>
-              </div>
-            </div>
-          </div>
-
-          ${uploadHtml}
-        `;
-
-        if (!tieneComp && p.fecha_expiracion) iniciarCountdown(p.fecha_expiracion);
-        setupUpload(p.id_participante);
-      }
-    }
-
-    // ── Upload ──────────────────────────────────────────────
-    function setupUpload(idParticipante) {
-      const input = document.getElementById('comp-input');
-      const area  = document.getElementById('upload-area');
-      const info  = document.getElementById('file-info');
-      const btn   = document.getElementById('btn-subir');
-      if (!input) return;
-
-      let archivo = null;
-
-      area.addEventListener('dragover', e => { e.preventDefault(); area.classList.add('drag-over'); });
-      area.addEventListener('dragleave', () => area.classList.remove('drag-over'));
-      area.addEventListener('drop', e => { e.preventDefault(); area.classList.remove('drag-over'); if (e.dataTransfer.files[0]) procesar(e.dataTransfer.files[0]); });
-      area.addEventListener('click', () => { input.click(); });
-      input.addEventListener('change', () => { if (input.files[0]) procesar(input.files[0]); });
-
-      function procesar(f) {
-        if (f.type !== 'application/pdf') { toast('Solo se aceptan archivos PDF.', 'error'); return; }
-        if (f.size > 3 * 1024 * 1024)   { toast('El archivo supera los 3 MB.', 'error'); return; }
-        archivo = f;
-        const mb = (f.size / 1048576).toFixed(2);
-        info.style.display = 'block';
-        info.innerHTML = `<div class="upload-archivo-seleccionado"><span class="upload-archivo-nombre">${f.name}</span><span class="upload-archivo-size">${mb} MB</span></div>`;
-        btn.disabled = false;
-      }
-
-      btn.addEventListener('click', async () => {
-        if (!archivo) return;
-        btn.disabled = true;
-        btn.textContent = 'Subiendo...';
-        try {
-          const base64 = await toBase64(archivo);
-          const res = await fetch(`${API_BASE}/api/participante/comprobante`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: idParticipante, comprobantePdfBase64: base64, comprobantePdfNombre: archivo.name }),
-          });
-          const data = await res.json();
-          if (data.success) {
-            toast('Comprobante enviado. Tu registro esta en revision.', 'success', 6000);
-            setTimeout(() => location.reload(), 1600);
-          } else {
-            toast(data.message || 'Error al subir el comprobante.', 'error');
-            btn.disabled = false;
-            btn.textContent = 'Subir comprobante';
-          }
-        } catch {
-          toast('Error de conexion. Intenta de nuevo.', 'error');
-          btn.disabled = false;
-          btn.textContent = 'Subir comprobante';
-        }
-      });
-    }
-
-    function toBase64(file) {
-      return new Promise((res, rej) => {
-        const r = new FileReader();
-        r.onload = () => res(r.result.split(',')[1]);
-        r.onerror = rej;
-        r.readAsDataURL(file);
-      });
-    }
-
-    // ── Error ───────────────────────────────────────────────
-    function renderError(titulo, desc) {
-      document.getElementById('portal-main').innerHTML = `
-        <div class="error-page">
-          <h1 class="error-title">${titulo}</h1>
-          <p class="error-desc">${desc}</p>
-        </div>`;
-    }
-
-    // ── Init ────────────────────────────────────────────────
-    async function init() {
-      const id = new URLSearchParams(location.search).get('id') || '';
-      if (!id) {
-        renderError('ID no proporcionado', 'Usa el link que recibiste en tu correo de confirmacion. Busca el boton "Ver mi registro" y vuelve a intentarlo.');
+    try {
+      const res  = await fetch(`${API_BASE}/api/participante?id=${encodeURIComponent(id)}`);
+      const data = await res.json();
+      if (!data.encontrado) {
+        renderError(
+          'Registro no encontrado', 
+          `No encontramos un registro con el ID <strong>${escapeHTML(id)}</strong>. Verifica que el link sea correcto o contactanos.`
+        );
         return;
       }
-      try {
-        const res  = await fetch(`${API_BASE}/api/participante?id=${encodeURIComponent(id)}`);
-        const data = await res.json();
-        if (!data.encontrado) {
-          renderError('Registro no encontrado', `No encontramos un registro con el ID <strong>${id}</strong>. Verifica que el link sea correcto o contactanos.`);
-          return;
-        }
-        renderPortal(data.participante);
-      } catch {
-        renderError('Error de conexion', 'No pudimos conectarnos al servidor. Por favor intenta de nuevo en unos momentos.');
-      }
+      await renderPortal(data.participante, API_BASE, BASE_URL);
+    } catch {
+      renderError(
+        'Error de conexion', 
+        'No pudimos conectarnos al servidor. Por favor intenta de nuevo en unos momentos.'
+      );
     }
+  }
 
-    init();
-  </script>
-</body>
-</html>
+  // Ejecutar al cargar el portal
+  init();
+</script>

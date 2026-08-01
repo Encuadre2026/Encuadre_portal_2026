@@ -1,0 +1,34 @@
+---
+// Plantilla principal del Portal del Participante (Layout base para las páginas del sitio)
+import '../styles/portal.css';
+
+export interface Props {
+  title: string;
+  description?: string;
+  noindex?: boolean;
+}
+
+const { 
+  title = "Portal del Participante — Encuadre 2026", 
+  description = "Consulta el estado de tu registro, descarga tu QR e imprime tu gafete para el 36 FTD Encuadre 2026.",
+  noindex = false 
+} = Astro.props;
+---
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  {noindex && <meta name="robots" content="noindex, nofollow" />}
+  <link rel="icon" href={import.meta.env.BASE_URL + "/logo_futurologia_encuadre.png"} />
+</head>
+<body>
+  <div class="portal-wrapper">
+    <slot />
+    <!-- Contenedor global para mostrar alertas y notificaciones (toasts) -->
+    <div class="toast-container" id="toast-container"></div>
+  </div>
+</body>
+</html>
