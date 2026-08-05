@@ -6,7 +6,7 @@ export interface Props {
 
 const { texto = "Cargando tu registro..." } = Astro.props;
 ---
-<div class="estado-loading" role="status" aria-busy="true" aria-label={texto}>
-  <div class="spinner"></div>
+<div class="estado-loading" role="status" aria-busy="true">
+  <div class="spinner" aria-hidden="true"></div>
   <p>{texto}</p>
 </div>

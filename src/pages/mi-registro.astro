@@ -26,25 +26,44 @@ import Spinner from '../components/Spinner.astro';
     if (!id) {
       renderError(
         'ID no proporcionado', 
-        'Usa el link que recibiste en tu correo de confirmacion. Busca el boton "Ver mi registro" y vuelve a intentarlo.'
+        'Usa el link que recibiste en tu correo de confirmación. Busca el botón "Ver mi registro" y vuelve a intentarlo.'
+      );
+      return;
+    }
+    if (!/^[A-Za-z0-9\-]+$/.test(id) || id.length > 30) {
+      renderError(
+        'ID no válido',
+        'El formato del identificador no es correcto. Usa el enlace original que recibiste en tu correo de confirmación.'
       );
       return;
     }
     try {
-      const res  = await fetch(`${API_BASE}/api/participante?id=${encodeURIComponent(id)}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15_000);
+      const res = await fetch(`${API_BASE}/api/participante?id=${encodeURIComponent(id)}`, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (!res.ok) {
+        renderError(
+          'Error del servidor',
+          `El servidor respondió con un error (código ${res.status}). Por favor intenta de nuevo en unos momentos.`,
+          init
+        );
+        return;
+      }
       const data = await res.json();
       if (!data.encontrado) {
         renderError(
           'Registro no encontrado', 
-          `No encontramos un registro con el ID <strong>${escapeHTML(id)}</strong>. Verifica que el link sea correcto o contactanos.`
+          `No encontramos un registro con el ID <strong>${escapeHTML(id)}</strong>. Verifica que el link sea correcto o contáctanos.`
         );
         return;
       }
       await renderPortal(data.participante, API_BASE, BASE_URL);
     } catch {
       renderError(
-        'Error de conexion', 
-        'No pudimos conectarnos al servidor. Por favor intenta de nuevo en unos momentos.'
+        'Error de conexión', 
+        'No pudimos conectarnos al servidor. Por favor intenta de nuevo en unos momentos.',
+        init
       );
     }
   }

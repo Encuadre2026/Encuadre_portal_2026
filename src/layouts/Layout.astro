@@ -13,6 +13,9 @@ const {
   description = "Consulta el estado de tu registro, descarga tu QR e imprime tu gafete para el 36 FTD Encuadre 2026.",
   noindex = false 
 } = Astro.props;
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL(import.meta.env.BASE_URL + '/logo_futurologia_encuadre.png', Astro.site).href;
 ---
 <!DOCTYPE html>
 <html lang="es">
@@ -22,13 +25,44 @@ const {
   <title>{title}</title>
   <meta name="description" content={description} />
   {noindex && <meta name="robots" content="noindex, nofollow" />}
-  <link rel="icon" href={import.meta.env.BASE_URL + "/logo_futurologia_encuadre.png"} />
+  <link rel="icon" type="image/svg+xml" href={import.meta.env.BASE_URL + "/favicon.svg"} />
+  <link rel="icon" type="image/x-icon" href={import.meta.env.BASE_URL + "/favicon.ico"} />
+  <link rel="canonical" href={canonicalURL.href} />
+  <meta name="theme-color" content="#151515" />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content={canonicalURL.href} />
+  <meta property="og:image" content={ogImage} />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
 </head>
 <body>
+  <noscript>
+    <div style="padding:40px;text-align:center;font-family:sans-serif;color:#ccc;background:#151515;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <h1 style="margin-bottom:16px;">JavaScript requerido</h1>
+      <p>Este portal necesita JavaScript habilitado para funcionar correctamente.</p>
+    </div>
+  </noscript>
   <div class="portal-wrapper">
     <slot />
     <!-- Contenedor global para mostrar alertas y notificaciones (toasts) -->
     <div class="toast-container" id="toast-container"></div>
   </div>
+  <div id="offline-banner" class="offline-banner" style="display:none;" role="alert">
+    ⚠️ Sin conexión a internet
+  </div>
+  <script is:inline>
+    (function() {
+      function u() {
+        var b = document.getElementById('offline-banner');
+        if (b) b.style.display = navigator.onLine ? 'none' : 'flex';
+      }
+      window.addEventListener('online', u);
+      window.addEventListener('offline', u);
+      u();
+    })();
+  </script>
 </body>
 </html>

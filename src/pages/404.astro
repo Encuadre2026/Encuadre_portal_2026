@@ -1,0 +1,21 @@
+---
+// Página 404 personalizada — se muestra automáticamente en rutas no encontradas
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+---
+<Layout title="Página no encontrada — Encuadre 2026" noindex={true}>
+  <Header />
+  <main class="portal-main">
+    <div class="error-page">
+      <div class="error-code">404</div>
+      <h1 class="error-title">Página no encontrada</h1>
+      <p class="error-desc">
+        La página que buscas no existe o fue movida. 
+        Si llegaste aquí desde un correo de confirmación, verifica que el enlace sea correcto.
+      </p>
+      <a class="btn btn-primary" href={import.meta.env.BASE_URL + "/mi-registro"} aria-label="Regresar al portal del participante">
+        Ir al portal
+      </a>
+    </div>
+  </main>
+</Layout>

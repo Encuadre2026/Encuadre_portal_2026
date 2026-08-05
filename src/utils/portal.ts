@@ -50,10 +50,17 @@ export function toast(msg: string, type: 'info' | 'success' | 'error' = 'info', 
 }
 
 // ── Formateadores y Estilos de Perfil ───────────────────────────
+// Parsea fechas de la API asumiendo UTC si no traen zona horaria explícita (estándar Cloudflare D1)
+function parsearFechaAPI(iso: string): Date {
+  const normalizada = iso.replace(' ', 'T');
+  if (/[Zz]$|[+-]\d{2}:\d{2}$/.test(normalizada)) return new Date(normalizada);
+  return new Date(normalizada + 'Z');
+}
+
 // Formatea fechas ISO a español mexicano legible (ej. lunes, 25 de mayo de 2026)
 export function formatFecha(iso?: string): string {
   if (!iso) return '—';
-  const d = new Date(iso.replace(' ', 'T') + 'Z');
+  const d = parsearFechaAPI(iso);
   return d.toLocaleDateString('es-MX', {
     timeZone: 'America/Mexico_City',
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -110,6 +117,8 @@ export function subirConProgreso(
     };
 
     xhr.onerror = () => reject(new Error('Error de conexión a la red'));
+    xhr.timeout = 30_000;
+    xhr.ontimeout = () => reject(new Error('Tiempo de espera agotado. Intenta de nuevo.'));
     xhr.send(body);
   });
 }
@@ -119,11 +128,12 @@ export function subirConProgreso(
 let cdInterval: number | null = null;
 
 export function iniciarCountdown(fechaSQL: string): void {
+  if (cdInterval) { window.clearInterval(cdInterval); cdInterval = null; }
   const el = document.getElementById('cd-inner');
   if (!el) return;
 
   function tick() {
-    const diff = new Date(fechaSQL.replace(' ', 'T') + 'Z').getTime() - Date.now();
+    const diff = parsearFechaAPI(fechaSQL).getTime() - Date.now();
     if (diff <= 0 && el) {
       if (cdInterval) clearInterval(cdInterval);
       el.innerHTML = `<p class="countdown-expired">El plazo ha vencido. Contáctanos a la brevedad para conservar tu lugar.</p>`;

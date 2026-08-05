@@ -11,14 +11,19 @@ import {
 
 // ── Renderizado de la Pantalla de Error ─────────────────────────
 // Muestra mensajes ilustrados cuando un ID falta o no existe
-export function renderError(titulo: string, desc: string): void {
+export function renderError(titulo: string, desc: string, onRetry?: () => void): void {
   const main = document.getElementById('portal-main');
   if (!main) return;
   main.innerHTML = `
     <div class="error-page">
       <h1 class="error-title">${titulo}</h1>
       <p class="error-desc">${desc}</p>
+      ${onRetry ? '<button class="btn btn-primary" id="btn-reintentar" aria-label="Reintentar la conexión">🔄 Reintentar</button>' : ''}
     </div>`;
+  if (onRetry) {
+    const btn = document.getElementById('btn-reintentar');
+    if (btn) btn.addEventListener('click', onRetry);
+  }
 }
 
 // ── Renderizado Principal del Dashboard ─────────────────────────
@@ -95,7 +100,7 @@ export async function renderPortal(pRaw: Participante, apiBase: string, baseUrl:
           <div id="file-info" style="display:none"></div>
           <button class="btn btn-primary btn-full" id="btn-subir" disabled aria-label="Enviar comprobante de pago en formato PDF">Subir comprobante</button>
           <p style="font-size:11px;color:#555;margin-top:10px;text-align:center">
-            También puedes responder el correo de confirmacioón adjuntando tu comprobante.
+            También puedes responder el correo de confirmación adjuntando tu comprobante.
           </p>
         </div>`;
     }
@@ -265,6 +270,7 @@ export function setupUpload(p: Participante, apiBase: string, baseUrl: string): 
   if (!input || !area || !info || !btn) return;
 
   let archivo: File | null = null;
+  let enviando = false;
 
   // Soporte para Arrastrar y Soltar (Drag & Drop)
   area.addEventListener('dragover', e => { e.preventDefault(); area.classList.add('drag-over'); });
@@ -312,7 +318,8 @@ export function setupUpload(p: Participante, apiBase: string, baseUrl: string): 
   }
 
   btn.addEventListener('click', async () => {
-    if (!archivo) return;
+    if (!archivo || enviando) return;
+    enviando = true;
     btn.disabled = true;
     btn.textContent = 'Subiendo...';
     
@@ -352,17 +359,20 @@ export function setupUpload(p: Participante, apiBase: string, baseUrl: string): 
           setTimeout(async () => {
             await renderPortal({ ...p, tiene_comprobante: true }, apiBase, baseUrl);
             if (main) main.style.opacity = '1';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
           }, 300);
         }, 900);
 
       } else {
         toast((res && res.message) || 'Error al subir el comprobante.', 'error');
+        enviando = false;
         btn.disabled = false;
         btn.textContent = 'Subir comprobante';
       }
     } catch {
       toast('Error de conexión. Intenta de nuevo.', 'error');
+      enviando = false;
       btn.disabled = false;
       btn.textContent = 'Subir comprobante';
     }
