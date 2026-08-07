@@ -105,7 +105,7 @@ export async function renderPortal(
           <div id="file-info" style="display:none"></div>
           <button class="btn btn-primary btn-full" id="btn-subir" disabled aria-label="Enviar comprobante de pago en formato PDF">Subir comprobante</button>
           <p style="font-size:11px;color:#555;margin-top:10px;text-align:center">
-            También puedes responder el correo de confirmación adjuntando tu comprobante.
+            Solo archivos PDF. Si tienes algún problema para subirlo, contáctanos.
           </p>
         </div>`;
     }
