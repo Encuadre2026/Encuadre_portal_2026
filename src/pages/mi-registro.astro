@@ -45,6 +45,16 @@ import Spinner from '../components/Spinner.astro';
       const timeoutId = setTimeout(() => controller.abort(), 15_000);
       const res = await fetch(`${API_BASE}/api/participante?id=${encodeURIComponent(token)}`, { signal: controller.signal });
       clearTimeout(timeoutId);
+      // 404 es la respuesta normal a un enlace que no corresponde a ningún
+      // registro. No es un fallo del servidor y no tiene sentido reintentarlo,
+      // así que se atiende antes que el resto de errores.
+      if (res.status === 404) {
+        renderError(
+          'Registro no encontrado',
+          'No encontramos ningún registro para este enlace. Revisa que sea el enlace completo que recibiste por correo, o contáctanos si crees que es un error.'
+        );
+        return;
+      }
       if (!res.ok) {
         renderError(
           'Error del servidor',
@@ -57,7 +67,7 @@ import Spinner from '../components/Spinner.astro';
       if (!data.encontrado) {
         renderError(
           'Registro no encontrado',
-          'No encontramos ningún registro para este enlace. Verifica que sea el que recibiste por correo o contáctanos.'
+          'No encontramos ningún registro para este enlace. Revisa que sea el enlace completo que recibiste por correo, o contáctanos si crees que es un error.'
         );
         return;
       }
