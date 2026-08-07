@@ -1,12 +1,43 @@
 ---
-// Componente de estado de carga inicial (spinner) con soporte para accesibilidad (a11y)
+// Componente de carga esqueleto (skeleton loading) — mejor perceived performance que un spinner
 export interface Props {
   texto?: string;
 }
 
 const { texto = "Cargando tu registro..." } = Astro.props;
 ---
-<div class="estado-loading" role="status" aria-busy="true">
-  <div class="spinner" aria-hidden="true"></div>
-  <p>{texto}</p>
+<div class="skeleton-wrapper" role="status" aria-busy="true">
+  <!-- Skeleton: Banner de estado -->
+  <div class="skeleton-banner">
+    <div class="skeleton-dot"></div>
+    <div class="skeleton-text-block">
+      <div class="skeleton-line" style="width:35%;height:14px;"></div>
+      <div class="skeleton-line" style="width:60%;height:10px;"></div>
+    </div>
+  </div>
+
+  <!-- Skeleton: Tarjeta de datos del participante -->
+  <div class="skeleton-card">
+    <div class="skeleton-line" style="width:28%;height:10px;margin-bottom:20px;"></div>
+    <div class="skeleton-grid">
+      <div class="skeleton-field full">
+        <div class="skeleton-line" style="width:30%;height:8px;"></div>
+        <div class="skeleton-line" style="width:65%;height:15px;"></div>
+      </div>
+      <div class="skeleton-field">
+        <div class="skeleton-line" style="width:50%;height:8px;"></div>
+        <div class="skeleton-line" style="width:70%;height:15px;"></div>
+      </div>
+      <div class="skeleton-field">
+        <div class="skeleton-line" style="width:25%;height:8px;"></div>
+        <div class="skeleton-line" style="width:55%;height:15px;"></div>
+      </div>
+      <div class="skeleton-field full">
+        <div class="skeleton-line" style="width:35%;height:8px;"></div>
+        <div class="skeleton-line" style="width:80%;height:15px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="skeleton-text" aria-live="polite">{texto}</p>
 </div>
