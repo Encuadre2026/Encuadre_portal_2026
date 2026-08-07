@@ -1,6 +1,8 @@
 ---
 // Portal del Participante — Vista Principal
-// Acceso: /mi-registro?id=ENC-XXX
+// Acceso: /mi-registro?id=<token>
+// El parámetro se llama `id` por compatibilidad con los enlaces ya enviados,
+// pero su valor es el token opaco del registro, no el id_participante.
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Spinner from '../components/Spinner.astro';
@@ -13,7 +15,6 @@ import Spinner from '../components/Spinner.astro';
 </Layout>
 
 <script>
-  import { escapeHTML } from '../utils/portal';
   import { renderError, renderPortal } from '../utils/vistas';
 
   // Configuración de endpoint para consulta de registros
@@ -22,25 +23,27 @@ import Spinner from '../components/Spinner.astro';
 
   // ── Inicio de la aplicación en el navegador ──────────────────
   async function init() {
-    const id = new URLSearchParams(window.location.search).get('id') || '';
-    if (!id) {
+    // El valor del parámetro `id` es el token del registro: la credencial
+    // que autoriza a ver y modificar estos datos. No se muestra en pantalla.
+    const token = new URLSearchParams(window.location.search).get('id') || '';
+    if (!token) {
       renderError(
-        'ID no proporcionado', 
+        'Enlace incompleto',
         'Usa el link que recibiste en tu correo de confirmación. Busca el botón "Ver mi registro" y vuelve a intentarlo.'
       );
       return;
     }
-    if (!/^[A-Za-z0-9\-]+$/.test(id) || id.length > 30) {
+    if (!/^[A-Za-z0-9\-]+$/.test(token) || token.length > 30) {
       renderError(
-        'ID no válido',
-        'El formato del identificador no es correcto. Usa el enlace original que recibiste en tu correo de confirmación.'
+        'Enlace no válido',
+        'El formato del enlace no es correcto. Usa el enlace original que recibiste en tu correo de confirmación.'
       );
       return;
     }
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15_000);
-      const res = await fetch(`${API_BASE}/api/participante?id=${encodeURIComponent(id)}`, { signal: controller.signal });
+      const res = await fetch(`${API_BASE}/api/participante?id=${encodeURIComponent(token)}`, { signal: controller.signal });
       clearTimeout(timeoutId);
       if (!res.ok) {
         renderError(
@@ -53,12 +56,12 @@ import Spinner from '../components/Spinner.astro';
       const data = await res.json();
       if (!data.encontrado) {
         renderError(
-          'Registro no encontrado', 
-          `No encontramos un registro con el ID <strong>${escapeHTML(id)}</strong>. Verifica que el link sea correcto o contáctanos.`
+          'Registro no encontrado',
+          'No encontramos ningún registro para este enlace. Verifica que sea el que recibiste por correo o contáctanos.'
         );
         return;
       }
-      await renderPortal(data.participante, API_BASE, BASE_URL);
+      await renderPortal(data.participante, API_BASE, BASE_URL, token);
     } catch {
       renderError(
         'Error de conexión', 

@@ -28,7 +28,12 @@ export function renderError(titulo: string, desc: string, onRetry?: () => void):
 
 // ── Renderizado Principal del Dashboard ─────────────────────────
 // Construye de forma segura y modular la vista del portal según el estado del pago
-export async function renderPortal(pRaw: Participante, apiBase: string, baseUrl: string = ''): Promise<void> {
+export async function renderPortal(
+  pRaw: Participante,
+  apiBase: string,
+  baseUrl: string = '',
+  tokenPortal: string = ''
+): Promise<void> {
   const main = document.getElementById('portal-main');
   if (!main) return;
 
@@ -256,7 +261,7 @@ export async function renderPortal(pRaw: Participante, apiBase: string, baseUrl:
     `;
 
     if (!tieneComp && p.fecha_expiracion) iniciarCountdown(p.fecha_expiracion);
-    setupUpload(p, apiBase, baseUrl);
+    setupUpload(p, apiBase, baseUrl, tokenPortal);
   }
 
   configurarBotonesCopiar();
@@ -283,7 +288,12 @@ function configurarBotonesCopiar(): void {
 
 // ── Controlador de Eventos para Carga de PDF ────────────────────
 // Gestiona el arrastrar, soltar, teclado (a11y), progreso visual y transición sin recarga
-export function setupUpload(p: Participante, apiBase: string, baseUrl: string): void {
+export function setupUpload(
+  p: Participante,
+  apiBase: string,
+  baseUrl: string,
+  tokenPortal: string
+): void {
   const input = document.getElementById('comp-input') as HTMLInputElement | null;
   const area  = document.getElementById('upload-area');
   const info  = document.getElementById('file-info');
@@ -353,7 +363,9 @@ export function setupUpload(p: Participante, apiBase: string, baseUrl: string): 
     try {
       // Construcción de FormData para envío multipart rápido y crudo (ahorras 33% de peso y CPU)
       const formData = new FormData();
-      formData.append('id', p.id_participante);
+      // El token es la credencial. El id_participante es público y no autentica:
+      // enviarlo permitía que cualquiera reemplazara el comprobante de otra persona.
+      formData.append('token', tokenPortal);
       formData.append('comprobante', archivo);
       formData.append('comprobantePdfNombre', archivo.name);
       
@@ -378,7 +390,7 @@ export function setupUpload(p: Participante, apiBase: string, baseUrl: string): 
           if (main) main.style.transition = 'opacity 0.3s ease';
           if (main) main.style.opacity = '0';
           setTimeout(async () => {
-            await renderPortal({ ...p, tiene_comprobante: true }, apiBase, baseUrl);
+            await renderPortal({ ...p, tiene_comprobante: true }, apiBase, baseUrl, tokenPortal);
             if (main) main.style.opacity = '1';
             const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
             window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
