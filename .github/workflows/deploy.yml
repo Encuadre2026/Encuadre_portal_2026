@@ -27,6 +27,14 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+
+      # Nada verificaba este portal antes de publicarlo: el workflow instalaba,
+      # compilaba y desplegaba. El linter y las pruebas ya existían desde hacía
+      # tiempo, pero no los ejecutaba nadie. Ahora son una puerta: si fallan, no
+      # se despliega.
+      - name: Verificar
+        run: npm run verificar
+
       - name: Build with Astro
         run: npm run build
       - name: Upload artifact
