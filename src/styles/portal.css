@@ -1239,3 +1239,49 @@ a:focus-visible,
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================================
+   CLASES QUE SUSTITUYEN A LOS ESTILOS EN LÍNEA
+   ------------------------------------------------------------
+   Estas reglas vivían dentro del TypeScript como atributos
+   `style="..."`, teniendo esta hoja al lado. Al estar repartidas
+   entre dos plantillas casi idénticas, además, cambiaban en una y
+   no en la otra.
+   ============================================================ */
+
+/* Se usa para el input de archivo y la barra de progreso, que empiezan
+   ocultos y se muestran al elegir el PDF. */
+.oculto {
+  display: none;
+}
+
+.estado-banner {
+  margin-bottom: 24px;
+}
+
+/* Segunda tarjeta de una columna, separada de la anterior. */
+.card-separada {
+  margin-top: 24px;
+}
+
+.dato-valor.dato-fecha {
+  font-size: 13px;
+}
+
+.gafete-sticky {
+  position: sticky;
+  top: 110px;
+}
+
+.upload-ya-enviado-aviso {
+  margin: 0;
+  padding: 20px;
+  text-align: center;
+}
+
+.upload-nota {
+  margin-top: 10px;
+  font-size: 11px;
+  color: #555;
+  text-align: center;
+}
