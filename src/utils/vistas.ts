@@ -1,12 +1,17 @@
-import { 
-  type Participante, 
-  escapeHTML, 
-  formatFecha, 
-  perfilColor, 
-  getQrUrl, 
-  toast, 
-  subirConProgreso,
-  iniciarCountdown 
+import {
+  ErrorApi,
+  MAX_PDF_BYTES,
+  MAX_PDF_MB,
+  subirComprobante,
+  type Participante,
+} from './api';
+import {
+  escapeHTML,
+  formatFecha,
+  perfilColor,
+  getQrUrl,
+  toast,
+  iniciarCountdown
 } from './portal';
 
 // ── Renderizado de la Pantalla de Error ─────────────────────────
@@ -100,7 +105,7 @@ export async function renderPortal(
               <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m6.75 12-3-3m0 0-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
             </svg>
             <p class="upload-text">Arrastra tu PDF aquí o haz clic para seleccionar</p>
-            <p class="upload-hint">Solo archivos PDF &bull; Máximo 3 MB</p>
+            <p class="upload-hint">Solo archivos PDF &bull; Máximo ${MAX_PDF_MB} MB</p>
           </div>
           <div id="file-info" style="display:none"></div>
           <button class="btn btn-primary btn-full" id="btn-subir" disabled aria-label="Enviar comprobante de pago en formato PDF">Subir comprobante</button>
@@ -295,10 +300,15 @@ export function setupUpload(
   tokenPortal: string
 ): void {
   const input = document.getElementById('comp-input') as HTMLInputElement | null;
-  const area  = document.getElementById('upload-area');
-  const info  = document.getElementById('file-info');
-  const btn   = document.getElementById('btn-subir') as HTMLButtonElement | null;
-  if (!input || !area || !info || !btn) return;
+  const area = document.getElementById('upload-area');
+  const infoOpcional = document.getElementById('file-info');
+  const btnOpcional = document.getElementById('btn-subir') as HTMLButtonElement | null;
+  if (!input || !area || !infoOpcional || !btnOpcional) return;
+
+  // Se rebautizan tras la guarda porque dentro de las funciones anidadas
+  // TypeScript no conserva el estrechamiento y volvía a verlos como nulos.
+  const info = infoOpcional;
+  const btn = btnOpcional;
 
   let archivo: File | null = null;
   let enviando = false;
@@ -325,7 +335,9 @@ export function setupUpload(
 
   function procesar(f: File) {
     if (f.type !== 'application/pdf') { toast('Solo se aceptan archivos PDF.', 'error'); return; }
-    if (f.size > 3 * 1024 * 1024)   { toast('El archivo supera los 3 MB.', 'error'); return; }
+    // El límite es el mismo que aplica el Worker. Antes eran 3 MB aquí y 5 allá,
+    // así que un comprobante de 4 MB se rechazaba sin llegar a salir del navegador.
+    if (f.size > MAX_PDF_BYTES) { toast(`El archivo supera los ${MAX_PDF_MB} MB.`, 'error'); return; }
     archivo = f;
     const mb = (f.size / 1048576).toFixed(2);
     info.style.display = 'block';
@@ -360,54 +372,64 @@ export function setupUpload(
     const txtPct  = document.getElementById('txt-pct');
     if (boxProg) boxProg.style.display = 'block';
 
-    try {
-      // Construcción de FormData para envío multipart rápido y crudo (ahorras 33% de peso y CPU)
-      const formData = new FormData();
-      // El token es la credencial. El id_participante es público y no autentica:
-      // enviarlo permitía que cualquiera reemplazara el comprobante de otra persona.
-      formData.append('token', tokenPortal);
-      formData.append('comprobante', archivo);
-      formData.append('comprobantePdfNombre', archivo.name);
-      
-      const res = await subirConProgreso(
-        `${apiBase}/api/participante/comprobante`,
-        formData,
-        (pct) => {
-          if (barra) barra.style.width = `${pct}%`;
-          if (txtPct) txtPct.textContent = `${pct}%`;
-          if (boxProg) boxProg.setAttribute('aria-valuenow', String(pct));
-        }
-      );
-
-      if (res && res.success) {
-        if (barra) barra.style.width = '100%';
-        if (txtPct) txtPct.textContent = '100%';
-        toast('Comprobante enviado. Tu registro está en revisión.', 'success', 6000);
-        
-        // Transición fluida del DOM sin recarga de ventana (sin location.reload)
-        setTimeout(() => {
-          const main = document.getElementById('portal-main');
-          if (main) main.style.transition = 'opacity 0.3s ease';
-          if (main) main.style.opacity = '0';
-          setTimeout(async () => {
-            await renderPortal({ ...p, tiene_comprobante: true }, apiBase, baseUrl, tokenPortal);
-            if (main) main.style.opacity = '1';
-            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
-          }, 300);
-        }, 900);
-
-      } else {
-        toast((res && res.message) || 'Error al subir el comprobante.', 'error');
-        enviando = false;
-        btn.disabled = false;
-        btn.textContent = 'Subir comprobante';
-      }
-    } catch {
-      toast('Error de conexión. Intenta de nuevo.', 'error');
+    /** Deja el formulario listo para otro intento. */
+    const permitirOtroIntento = () => {
       enviando = false;
       btn.disabled = false;
       btn.textContent = 'Subir comprobante';
+      if (boxProg) boxProg.style.display = 'none';
+      if (barra) barra.style.width = '0%';
+      if (txtPct) txtPct.textContent = '0%';
+    };
+
+    /** Repinta el portal con el estado nuevo, sin recargar la ventana. */
+    const repintar = (cambios: Partial<Participante>) => {
+      setTimeout(() => {
+        const main = document.getElementById('portal-main');
+        if (main) {
+          main.style.transition = 'opacity 0.3s ease';
+          main.style.opacity = '0';
+        }
+        setTimeout(async () => {
+          await renderPortal({ ...p, ...cambios }, apiBase, baseUrl, tokenPortal);
+          if (main) main.style.opacity = '1';
+          const prefiereMenosMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          window.scrollTo({ top: 0, behavior: prefiereMenosMovimiento ? 'auto' : 'smooth' });
+        }, 300);
+      }, 900);
+    };
+
+    try {
+      const mensaje = await subirComprobante(apiBase, tokenPortal, archivo, (pct) => {
+        if (barra) barra.style.width = `${pct}%`;
+        if (txtPct) txtPct.textContent = `${pct}%`;
+        if (boxProg) boxProg.setAttribute('aria-valuenow', String(pct));
+      });
+
+      if (barra) barra.style.width = '100%';
+      if (txtPct) txtPct.textContent = '100%';
+      toast(mensaje, 'success', 6000);
+      repintar({ tiene_comprobante: true });
+    } catch (err) {
+      // El servidor explica con precisión qué pasó —no es un PDF, pesa
+      // demasiado, el enlace no vale— y antes los cuatro casos se enseñaban
+      // como «Error de conexión», así que la persona reintentaba sin saber qué
+      // corregir. Ahora se muestra su motivo.
+      const fallo =
+        err instanceof ErrorApi
+          ? err
+          : new ErrorApi('No pudimos subir el comprobante. Intenta de nuevo.');
+
+      // Si el pago ya estaba aprobado no hay nada que reintentar: lo que
+      // procede es enseñarle su acceso, no un error.
+      if (fallo.codigo === 'PAGO_YA_APROBADO') {
+        toast(fallo.message, 'info', 6000);
+        repintar({ pago_aprobado: true });
+        return;
+      }
+
+      toast(fallo.message, 'error', 6000);
+      permitirOtroIntento();
     }
   });
 }

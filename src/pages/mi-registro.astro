@@ -16,10 +16,14 @@ import Spinner from '../components/Spinner.astro';
 
 <script>
   import { renderError, renderPortal } from '../utils/vistas';
+  import { ErrorApi, obtenerParticipante } from '../utils/api';
 
   // Configuración de endpoint para consulta de registros
   const API_BASE = import.meta.env.PUBLIC_API_BASE || 'https://encuadre-2026-api.sitio-392.workers.dev';
   const BASE_URL = import.meta.env.BASE_URL || '';
+
+  const NO_ENCONTRADO =
+    'No encontramos ningún registro para este enlace. Revisa que sea el enlace completo que recibiste por correo, o contáctanos si crees que es un error.';
 
   // ── Inicio de la aplicación en el navegador ──────────────────
   async function init() {
@@ -40,44 +44,36 @@ import Spinner from '../components/Spinner.astro';
       );
       return;
     }
+
+    const controlador = new AbortController();
+    const tiempoLimite = setTimeout(() => controlador.abort(), 15_000);
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15_000);
-      const res = await fetch(`${API_BASE}/api/participante?id=${encodeURIComponent(token)}`, { signal: controller.signal });
-      clearTimeout(timeoutId);
-      // 404 es la respuesta normal a un enlace que no corresponde a ningún
-      // registro. No es un fallo del servidor y no tiene sentido reintentarlo,
-      // así que se atiende antes que el resto de errores.
-      if (res.status === 404) {
-        renderError(
-          'Registro no encontrado',
-          'No encontramos ningún registro para este enlace. Revisa que sea el enlace completo que recibiste por correo, o contáctanos si crees que es un error.'
-        );
+      const participante = await obtenerParticipante(API_BASE, token, controlador.signal);
+      await renderPortal(participante, API_BASE, BASE_URL, token);
+    } catch (err) {
+      const fallo = err instanceof ErrorApi ? err : new ErrorApi('Error inesperado.');
+
+      // Un enlace que no corresponde a ningún registro no es un fallo del
+      // servidor y no tiene sentido ofrecer reintento: reintentarlo daría
+      // siempre lo mismo.
+      if (fallo.codigo === 'NO_ENCONTRADO' || fallo.status === 404) {
+        renderError('Registro no encontrado', NO_ENCONTRADO);
         return;
       }
-      if (!res.ok) {
+
+      if (fallo.esDeRed) {
         renderError(
-          'Error del servidor',
-          `El servidor respondió con un error (código ${res.status}). Por favor intenta de nuevo en unos momentos.`,
+          'Error de conexión',
+          'No pudimos conectarnos al servidor. Por favor intenta de nuevo en unos momentos.',
           init
         );
         return;
       }
-      const data = await res.json();
-      if (!data.encontrado) {
-        renderError(
-          'Registro no encontrado',
-          'No encontramos ningún registro para este enlace. Revisa que sea el enlace completo que recibiste por correo, o contáctanos si crees que es un error.'
-        );
-        return;
-      }
-      await renderPortal(data.participante, API_BASE, BASE_URL, token);
-    } catch {
-      renderError(
-        'Error de conexión', 
-        'No pudimos conectarnos al servidor. Por favor intenta de nuevo en unos momentos.',
-        init
-      );
+
+      // Para el resto se enseña lo que explicó el servidor, no un texto genérico.
+      renderError('Error del servidor', fallo.message, init);
+    } finally {
+      clearTimeout(tiempoLimite);
     }
   }
 
