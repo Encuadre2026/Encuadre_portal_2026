@@ -1,17 +1,8 @@
 import QRCode from 'qrcode';
 
-// ── Interfaces de Datos ─────────────────────────────────────────
-export interface Participante {
-  id_participante: string;
-  nombre: string;
-  perfil: string;
-  taller: string;
-  institucion: string;
-  fecha_registro: string;
-  fecha_expiracion?: string;
-  pago_aprobado: number | boolean;
-  tiene_comprobante: number | boolean;
-}
+// Este módulo es de presentación: escapar, formatear, pintar. Lo que habla con
+// el Worker —incluida la forma `Participante`— vive en `api.ts`, para que la
+// vista no tenga que saber nada del transporte.
 
 // ── Seguridad y Sanitización ────────────────────────────────────
 // Elimina o convierte caracteres HTML peligrosos para prevenir ataques XSS
@@ -76,51 +67,6 @@ export function perfilColor(perfil: string): string {
     Investigador: '#bf5af2' 
   };
   return colores[perfil] || '#6b7280';
-}
-
-// Envía datos del comprobante como FormData cruda (33% más ligero que Base64) reportando el porcentaje en vivo
-export function subirConProgreso(
-  url: string, 
-  data: FormData | Record<string, unknown>, 
-  onProgress: (porcentaje: number) => void
-): Promise<{ success?: boolean; message?: string }> {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', url, true);
-
-    // Al usar FormData, no especificamos Content-Type para permitir que el navegador inyecte su límite (boundary)
-    let body: FormData | string;
-    if (!(data instanceof FormData)) {
-      xhr.setRequestHeader('Content-Type', 'application/json');
-      body = JSON.stringify(data);
-    } else {
-      body = data;
-    }
-
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable && e.total > 0) {
-        const porcentaje = Math.round((e.loaded / e.total) * 100);
-        onProgress(porcentaje);
-      }
-    };
-
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          resolve(JSON.parse(xhr.responseText));
-        } catch {
-          resolve({ success: true });
-        }
-      } else {
-        reject(new Error(`Error de HTTP: ${xhr.status}`));
-      }
-    };
-
-    xhr.onerror = () => reject(new Error('Error de conexión a la red'));
-    xhr.timeout = 30_000;
-    xhr.ontimeout = () => reject(new Error('Tiempo de espera agotado. Intenta de nuevo.'));
-    xhr.send(body);
-  });
 }
 
 // ── Temporizador (Cuenta Regresiva) ─────────────────────────────

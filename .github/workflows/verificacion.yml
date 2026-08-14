@@ -1,0 +1,36 @@
+name: Verificación
+
+# El workflow de despliegue solo corre al empujar a `main`, y además solo
+# compilaba: el linter y las pruebas existían pero nada las ejecutaba. Este
+# corre en el pull request, que es donde sirve enterarse.
+on:
+  pull_request:
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # `astro check` es lo que compila de verdad el TypeScript del navegador.
+      # En el sitio principal fue lo que atrapó un `i is not defined` que ya
+      # había llegado a producción, y aquí encontró cuatro errores en la
+      # primera pasada.
+      - name: Comprobación de tipos
+        run: npm run check
+
+      - name: Pruebas
+        run: npm test
