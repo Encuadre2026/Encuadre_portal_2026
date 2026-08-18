@@ -765,18 +765,21 @@ html, body {
   position: relative;
 }
 
+/* La barra iba de azul a verde, dos colores que no son del portal. Se llena
+   con el amarillo de la marca, del acento al de hover, para que el único
+   color fuerte de la pantalla siga siendo el mismo. */
 .upload-progreso-barra {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, #0a84ff, #30d158);
+  background: linear-gradient(90deg, var(--acento), var(--acento-hover));
   border-radius: 99px;
   transition: width 0.25s ease;
-  box-shadow: 0 0 12px rgba(48, 209, 88, 0.5);
+  box-shadow: 0 0 12px var(--acento-glow);
 }
 
 .upload-progreso-texto {
   font-size: 11px;
-  color: #30d158;
+  color: var(--acento);
   margin-top: 6px;
   font-weight: 700;
   display: flex;
@@ -784,9 +787,12 @@ html, body {
 }
 
 /* ── Notificaciones toast ────────────────────────────────── */
+/* Arriba a la derecha, justo debajo del header pegajoso (76px de alto), que
+   es donde mira quien acaba de soltar el comprobante. Abajo el aviso caía
+   fuera de la vista en pantallas largas. */
 .toast-container {
   position: fixed;
-  bottom: 24px;
+  top: 92px;
   right: 24px;
   z-index: 999;
   display: flex;
