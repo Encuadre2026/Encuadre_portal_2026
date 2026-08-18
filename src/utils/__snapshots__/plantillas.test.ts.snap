@@ -11,7 +11,7 @@ exports[`tarjetaDatos > mantiene su forma 1`] = `
           </div>
           <div class="dato-item">
             <span class="dato-label">ID de Participante</span>
-            <span class="dato-valor id-participante">ENC-042 <button class="btn-copiar" data-copiar="ENC-042" aria-label="Copiar ID al portapapeles" title="Copiar ID">📋</button></span>
+            <span class="dato-valor id-participante">ENC-042</span>
           </div>
           <div class="dato-item">
             <span class="dato-label">Perfil</span>
@@ -54,7 +54,7 @@ exports[`vistas completas > la de comprobante en revisión mantiene su forma 1`]
           </div>
           <div class="dato-item">
             <span class="dato-label">ID de Participante</span>
-            <span class="dato-valor id-participante">ENC-042 <button class="btn-copiar" data-copiar="ENC-042" aria-label="Copiar ID al portapapeles" title="Copiar ID">📋</button></span>
+            <span class="dato-valor id-participante">ENC-042</span>
           </div>
           <div class="dato-item">
             <span class="dato-label">Perfil</span>
@@ -109,7 +109,7 @@ exports[`vistas completas > la de comprobante pendiente mantiene su forma 1`] = 
           </div>
           <div class="dato-item">
             <span class="dato-label">ID de Participante</span>
-            <span class="dato-valor id-participante">ENC-042 <button class="btn-copiar" data-copiar="ENC-042" aria-label="Copiar ID al portapapeles" title="Copiar ID">📋</button></span>
+            <span class="dato-valor id-participante">ENC-042</span>
           </div>
           <div class="dato-item">
             <span class="dato-label">Perfil</span>
@@ -170,7 +170,7 @@ exports[`vistas completas > la de pago aprobado mantiene su forma 1`] = `
           </div>
           <div class="dato-item">
             <span class="dato-label">ID de Participante</span>
-            <span class="dato-valor id-participante">ENC-042 <button class="btn-copiar" data-copiar="ENC-042" aria-label="Copiar ID al portapapeles" title="Copiar ID">📋</button></span>
+            <span class="dato-valor id-participante">ENC-042</span>
           </div>
           <div class="dato-item">
             <span class="dato-label">Perfil</span>

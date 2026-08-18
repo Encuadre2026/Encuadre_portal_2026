@@ -69,27 +69,6 @@ export async function renderPortal(
     if (!tieneComp && p.fecha_expiracion) iniciarCountdown(p.fecha_expiracion);
     if (!tieneComp) setupUpload(p, apiBase, baseUrl, tokenPortal);
   }
-
-  configurarBotonesCopiar();
-}
-
-// ── Botón de copiar ID al portapapeles ──────────────────────────────
-function configurarBotonesCopiar(): void {
-  document.querySelectorAll<HTMLButtonElement>('.btn-copiar').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const valor = btn.dataset.copiar || '';
-      try {
-        await navigator.clipboard.writeText(valor);
-        const original = btn.textContent;
-        btn.textContent = '✓';
-        toast('ID copiado al portapapeles', 'success');
-        setTimeout(() => { btn.textContent = original; }, 1500);
-      } catch {
-        toast('No se pudo copiar al portapapeles', 'error');
-      }
-    });
-  });
 }
 
 // ── Controlador de Eventos para Carga de PDF ────────────────────

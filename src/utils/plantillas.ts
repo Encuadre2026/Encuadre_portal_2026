@@ -62,9 +62,8 @@ export function bannerEstado(estado: EstadoPortal): string {
  * Datos del registro.
  *
  * Estaba escrito dos veces, una por rama de estado, y las dos copias ya habían
- * divergido: el botón de copiar el ID existía solo en la vista de pago
- * aprobado, así que quien aún tenía el pago pendiente veía el mismo dato sin
- * poder copiarlo. Con una sola definición, esa deriva no puede repetirse.
+ * divergido: cada vista enseñaba los mismos datos con adornos distintos según
+ * el estado del pago. Con una sola definición, esa deriva no puede repetirse.
  */
 export function tarjetaDatos(p: Participante): string {
   return `
@@ -77,7 +76,7 @@ export function tarjetaDatos(p: Participante): string {
           </div>
           <div class="dato-item">
             <span class="dato-label">ID de Participante</span>
-            <span class="dato-valor id-participante">${p.id_participante} <button class="btn-copiar" data-copiar="${p.id_participante}" aria-label="Copiar ID al portapapeles" title="Copiar ID">📋</button></span>
+            <span class="dato-valor id-participante">${p.id_participante}</span>
           </div>
           <div class="dato-item">
             <span class="dato-label">Perfil</span>

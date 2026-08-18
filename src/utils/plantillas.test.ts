@@ -55,15 +55,15 @@ describe('estadoDe', () => {
 // ── Datos del registro ──────────────────────────────────────────
 describe('tarjetaDatos', () => {
   // Estaba escrita dos veces, una por rama de estado, y las copias divergieron:
-  // el botón de copiar existía solo en la vista de pago aprobado. Con una sola
+  // cada vista enseñaba los mismos datos con adornos distintos. Con una sola
   // definición eso no puede repetirse, y esto lo afirma.
-  it('ofrece el botón de copiar el ID sea cual sea el estado', () => {
+  it('enseña el ID de participante sea cual sea el estado', () => {
     const aprobado = vistaAprobado(P, estadoDe(true, true), { grande: '', pequeno: '', descarga: '' }, '');
     const pendiente = vistaPendiente(P, estadoDe(false, false), false);
     const revision = vistaPendiente(P, estadoDe(false, true), true);
 
     for (const vista of [aprobado, pendiente, revision]) {
-      expect(vista).toContain('class="btn-copiar" data-copiar="ENC-042"');
+      expect(vista).toContain('<span class="dato-valor id-participante">ENC-042</span>');
     }
   });
 
