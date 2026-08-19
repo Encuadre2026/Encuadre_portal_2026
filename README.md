@@ -11,7 +11,7 @@ Portal web oficial para los participantes del 36 Encuentro Nacional de Escuelas 
   - **En Revisión**: Confirma la recepción exitosa del comprobante digital y su verificación en proceso por el equipo administrativo.
   - **Pago Aprobado**: Habilita la descarga oficial del código QR y del gafete virtual para el acceso al evento.
 - **Carga Eficiente de Comprobantes PDF (FormData)**:
-  - Interfaz con soporte para arrastrar y soltar (drag and drop) con validación de formato y tamaño (máximo 3 MB).
+  - Interfaz con soporte para arrastrar y soltar (drag and drop) con validación de formato y tamaño (máximo 5 MB, el mismo límite que aplica el Worker).
   - **Barra de Progreso Visual**: Animación fluida e indicación del porcentaje transferido en tiempo real vía red (XMLHttpRequest).
   - **Transición sin Recarga (UX)**: Al concluir exitosamente la subida de un comprobante, el sistema transita suavemente a la vista "En Revisión" sin ejecutar recargas bruscas en el navegador (location.reload).
   - **Transmisión Eficiente**: El archivo PDF viaja en formato crudo FormData (multipart/form-data), ahorrando hasta un 33% de ancho de banda y recursos de procesamiento respecto a envíos en Base64.
@@ -39,13 +39,17 @@ Portal web oficial para los participantes del 36 Encuentro Nacional de Escuelas 
 │   ├── layouts/               # Plantillas de estructura general
 │   │   └── Layout.astro           # Esqueleto HTML5, metadatos SEO y contenedor para alertas
 │   ├── pages/                 # Enrutamiento público del portal
-│   │   ├── index.astro            # Redirección de entrada al dashboard
-│   │   └── mi-registro.astro      # Controlador ligero de la vista principal del participante
+│   │   ├── mi-registro.astro      # Controlador ligero de la vista principal del participante
+│   │   └── 404.astro              # Página de ruta no encontrada
+│   │                              # (la redirección de «/» se declara en astro.config.mjs)
 │   ├── styles/                # Sistema unified de diseño
 │   │   └── portal.css             # Hoja de estilos única (Glassmorphism, variables HSL y Modo Print)
 │   └── utils/                 # Módulos de lógica y tipado en TypeScript
-│       ├── portal.ts              # Definiciones de interfaces, sanitización XSS y red
-│       └── vistas.ts              # Controladores del DOM, transiciones de estado y eventos
+│       ├── api.ts                 # Cliente del Worker: sesión, errores tipados, subida
+│       ├── portal.ts              # Presentación: escapado XSS, fechas, QR, cuenta atrás
+│       ├── plantillas.ts          # HTML como funciones puras, comprobables sin navegador
+│       ├── vistas.ts              # Composición y cableado de eventos sobre el DOM
+│       └── *.test.ts              # Pruebas con Vitest, incluidas instantáneas del HTML
 ├── .env.example               # Plantilla documentada de variables de entorno
 ├── astro.config.mjs           # Configuración de compilación para entorno estático
 └── package.json               # Configuración de scripts y dependencias oficiales
@@ -61,14 +65,47 @@ Los siguientes comandos deben ejecutarse desde la terminal situada en el directo
 | :--- | :--- |
 | `npm install` | Instala las dependencias del proyecto y genera el árbol de paquetes |
 | `npm run dev` | Inicia el servidor de desarrollo local de forma interactiva (`http://localhost:4321`) |
-| `npm run build` | Ejecuta la validación estricta de TypeScript y compila los activos finales en `./dist/` |
-| `npm run preview` | Permite verificar de manera local el comportamiento de los archivos compilados en producción |
+| `npm run build` | Compila los activos finales en `./dist/` |
+| `npm run preview` | Verifica de manera local el comportamiento de los archivos compilados |
+| `npm run lint` | ESLint sobre `src/` |
+| `npm run check` | `astro check`: la única comprobación que compila de verdad el TypeScript del navegador |
+| `npm test` | Vitest: 44 pruebas, sin necesidad de navegador |
+| `npm run verificar` | Los tres anteriores seguidos. Es lo mismo que ejecuta CI |
+
+### Verificación antes de publicar
+
+`verificacion.yml` corre en cada pull request, y `deploy.yml` repite lo mismo
+como puerta antes de desplegar: si falla, no se publica.
+
+Hasta agosto de 2026 el workflow solo compilaba. El linter y las pruebas ya
+existían y **no los ejecutaba nadie**; `astro check` ni siquiera estaba
+instalado, y en su primera pasada encontró cuatro errores de tipos.
 
 ---
 
 ## Integración con Backend en la Nube
 
 Este proyecto interactúa directamente con una arquitectura sin servidor desplegada en Cloudflare Workers, apoyada por una base de datos relacional Cloudflare D1 y almacenamiento para documentos de pago en Cloudflare R2.
+
+### El contrato
+
+Toda respuesta del Worker lleva `ok`; los errores llevan además `codigo` —un
+identificador estable— y `mensaje` —el texto que se le enseña a la persona—.
+`src/utils/api.ts` lo traduce a un `ErrorApi` con esos dos campos.
+
+Esto importa más de lo que parece. Antes la subida rechazaba cualquier respuesta
+que no fuese 2xx y quien la llamaba enseñaba «Error de conexión» pasara lo que
+pasara, de modo que estos cuatro casos se veían idénticos:
+
+| El servidor decía | La persona leía |
+| --- | --- |
+| El comprobante supera el tamaño máximo de 5 MB | Error de conexión |
+| El archivo debe ser un PDF | Error de conexión |
+| Enlace no válido. Usa el que recibiste por correo | Error de conexión |
+| Tu pago ya fue aprobado | Error de conexión |
+
+Ahora se muestra el motivo real, y el pago ya aprobado deja de ser un callejón
+sin salida: en vez de un error, el portal se repinta con el gafete y el QR.
 
 ### Configuración para pruebas en desarrollo:
 1. Copia el archivo `.env.example` del directorio raíz con el nombre `.env`.
@@ -84,5 +121,5 @@ Este proyecto interactúa directamente con una arquitectura sin servidor despleg
 
 La estructura de este repositorio mantiene interoperabilidad estricta con los sistemas complementarios del congreso:
 - **Encuadre_2026**: Compatible con las redirecciones del sistema automatizado de correos electrónicos (Brevo) hacia las vistas del portal.
-- **app-qr**: Las cadenas cifradas generadas localmente por los códigos QR corresponden de manera exacta al protocolo esperado por la aplicación de control de acceso física.
+- **app-qr**: el código QR contiene el `id_participante` en texto plano —no va cifrado— y es exactamente lo que espera la aplicación de control de acceso al escanearlo.
 - **Encuadre_Admin_2026**: Los archivos subidos vía FormData se indexan e interpretan íntegramente de forma legible por los administradores del evento a través del panel de control oficial.
