@@ -17,6 +17,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # El límite por defecto de GitHub son seis horas. Un job colgado se quedaría
+    # ahí consumiendo minutos de la cuenta antes de rendirse.
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,6 +46,7 @@ jobs:
           path: ./dist
 
   deploy:
+    timeout-minutes: 10
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
