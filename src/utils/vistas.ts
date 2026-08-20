@@ -18,6 +18,37 @@ import {
 // `plantillas.ts`, que son funciones puras y por tanto comprobables sin
 // navegador.
 
+// ── Frontera de Seguridad ───────────────────────────────────────
+//
+// Las plantillas construyen HTML con cadenas y lo insertan con `innerHTML`, así
+// que lo único que impide una inyección es que TODO campo de texto que venga
+// del Worker pase por aquí antes de llegar a ellas.
+//
+// Estaba escrito en medio de `renderPortal`, que necesita un DOM y por tanto no
+// se podía probar: era una disciplina que dependía de que nadie se despistara
+// al añadir un campo. Sacarlo a una función pura permite que
+// `vistas.test.ts` lo compruebe campo por campo.
+//
+// Si añades un campo de texto a `Participante`, añádelo también aquí. El tipo
+// `CampoDeTexto` de la prueba lo detecta y deja de compilar hasta que lo hagas.
+export function sanearParticipante(pRaw: Participante): Participante {
+  return {
+    ...pRaw,
+    nombre: escapeHTML(pRaw.nombre || 'Participante sin nombre'),
+    id_participante: escapeHTML(pRaw.id_participante || 'SIN-ID'),
+    perfil: escapeHTML(pRaw.perfil || 'General'),
+    taller: escapeHTML(pRaw.taller || 'Por asignar'),
+    institucion: escapeHTML(pRaw.institucion || 'No especificada'),
+    // `fecha_registro` y `fecha_expiracion` no se escapan porque no se pintan
+    // en crudo: la primera pasa siempre por `formatFecha`, que devuelve lo que
+    // produce `toLocaleDateString` —texto de fecha o «Invalid Date», nunca la
+    // entrada—, y la segunda solo alimenta la cuenta atrás. Es seguro, pero por
+    // cómo funciona el formateador, no por diseño: si algún día `formatFecha`
+    // devolviera su argumento como respaldo, sería una inyección. La prueba
+    // cubre las dos.
+  };
+}
+
 // ── Renderizado de la Pantalla de Error ─────────────────────────
 // Muestra mensajes ilustrados cuando un ID falta o no existe
 export function renderError(titulo: string, desc: string, onRetry?: () => void): void {
@@ -41,15 +72,7 @@ export async function renderPortal(
   const main = document.getElementById('portal-main');
   if (!main) return;
 
-  // Sanitizar datos del usuario y asignar fallbacks
-  const p: Participante = {
-    ...pRaw,
-    nombre: escapeHTML(pRaw.nombre || 'Participante sin nombre'),
-    id_participante: escapeHTML(pRaw.id_participante || 'SIN-ID'),
-    perfil: escapeHTML(pRaw.perfil || 'General'),
-    taller: escapeHTML(pRaw.taller || 'Por asignar'),
-    institucion: escapeHTML(pRaw.institucion || 'No especificada')
-  };
+  const p = sanearParticipante(pRaw);
 
   const aprobado = p.pago_aprobado == 1 || p.pago_aprobado === true;
   const tieneComp = p.tiene_comprobante == 1 || p.tiene_comprobante === true;
