@@ -236,11 +236,6 @@ html, body {
 }
 
 /* ── Timer Premium ────────────────────────────────────────── */
-.countdown-card {
-  margin-top: 24px;
-  text-align: center;
-}
-
 .countdown-label {
   font-size: 11px;
   font-weight: 700;
@@ -665,11 +660,6 @@ html, body {
 }
 
 /* ── Estado de carga (spinner inicial) ───────────────────── */
-.estado-loading {
-  text-align: center;
-  padding: 80px 20px;
-}
-
 .spinner {
   width: 48px;
   height: 48px;
@@ -682,12 +672,6 @@ html, body {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-
-.estado-loading p {
-  font-size: 14px;
-  color: var(--texto-muted);
-  font-weight: 500;
 }
 
 /* ── Envolvente del countdown (pendiente sin comprobante) ─── */
@@ -833,7 +817,6 @@ html, body {
 
   .portal-header,
   .estado-banner,
-  .countdown-card,
   .card:not(.gafete-print-section),
   .upload-section,
   .toast-container,

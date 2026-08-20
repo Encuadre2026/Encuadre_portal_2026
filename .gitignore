@@ -14,8 +14,11 @@ pnpm-debug.log*
 
 
 # environment variables
+# Se ignoran todas las variantes: Astro sugiere `.env.local` y `.env.development`
+# para desarrollo, y listar solo dos nombres dejaba el resto sin cubrir.
 .env
-.env.production
+.env.*
+!.env.example
 
 # macOS-specific files
 .DS_Store
