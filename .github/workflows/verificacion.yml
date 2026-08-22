@@ -37,3 +37,11 @@ jobs:
 
       - name: Pruebas
         run: npm test
+
+      # `npm run build` termina llamando a `scripts/verificar-salida.mjs`.
+      # Hace falta compilar en el pull request porque hay una clase de fallo que
+      # solo se ve en `dist/`: la redirección de la raíz apuntaba fuera del
+      # sitio —Astro no antepone `base` al destino de un redirect— y ni el
+      # linter, ni los tipos, ni las pruebas, ni `npm run dev` lo notaban.
+      - name: Compilación y comprobación de la salida
+        run: npm run build

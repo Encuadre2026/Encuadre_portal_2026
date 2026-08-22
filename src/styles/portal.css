@@ -33,11 +33,17 @@
   --estado-aprobado: #30d158;
   --estado-aprobado-bg: rgba(48, 209, 88, 0.1);
 
-  /* Perfiles */
+  /* Perfiles.
+     Estos cuatro colores son la única definición que existe. Antes estaban
+     también en `perfilColor()` (TypeScript) y una tercera vez como literales
+     `rgba()` en `.perfil-badge`: tres copias de los mismos hex que había que
+     mantener a mano y que nada comprobaba. Ahora el TypeScript solo decide
+     *qué* perfil es (`normalizarPerfil`) y el color lo pone el CSS. */
   --perfil-estudiante: #0a84ff;
   --perfil-profesor: #30d158;
   --perfil-profesional: #ff9f0a;
   --perfil-investigador: #bf5af2;
+  --perfil-generico: #6b7280;
 
   --radio: 12px;
   --radio-sm: 8px;
@@ -343,10 +349,24 @@ html, body {
   border-radius: 20px;
   border: 1px solid currentColor;
 }
-.perfil-badge.Estudiante   { color: var(--perfil-estudiante);  background: rgba(10, 132, 255, 0.1); }
-.perfil-badge.Profesor     { color: var(--perfil-profesor);    background: rgba(48, 209, 88, 0.1); }
-.perfil-badge.Profesional  { color: var(--perfil-profesional); background: rgba(255, 159, 10, 0.1); }
-.perfil-badge.Investigador { color: var(--perfil-investigador);background: rgba(191, 90, 242, 0.1); }
+/* Resuelve el color del perfil una sola vez y lo deja heredar.
+   El valor de `data-perfil` es una etiqueta normalizada de un conjunto cerrado
+   (`normalizarPerfil` en `portal.ts`), no el texto que manda el servidor: antes
+   era `class="perfil-badge ${p.perfil}"`, así que un «estudiante» en minúsculas
+   o con un espacio de más perdía el color sin dar ningún error.
+
+   La regla genérica va primero a propósito: todos estos selectores tienen la
+   misma especificidad, así que lo que decide es el orden. */
+[data-perfil]                { --perfil-actual: var(--perfil-generico); }
+[data-perfil="estudiante"]   { --perfil-actual: var(--perfil-estudiante); }
+[data-perfil="profesor"]     { --perfil-actual: var(--perfil-profesor); }
+[data-perfil="profesional"]  { --perfil-actual: var(--perfil-profesional); }
+[data-perfil="investigador"] { --perfil-actual: var(--perfil-investigador); }
+
+.perfil-badge {
+  color: var(--perfil-actual);
+  background: color-mix(in srgb, var(--perfil-actual) 10%, transparent);
+}
 
 /* ── Zona de Carga Avanzada ───────────────────────────────── */
 .upload-area {
@@ -484,6 +504,9 @@ html, body {
 
 .gafete {
   width: 320px;
+  /* El color del perfil llega por `data-perfil`, no por un `style=""` inline:
+     así el gafete y el badge de la tarjeta no pueden desincronizarse. */
+  border-top: 6px solid var(--perfil-actual);
   background: #ffffff;
   border-radius: 12px;
   overflow: hidden;
@@ -572,6 +595,7 @@ html, body {
   text-transform: uppercase;
   padding: 3px 12px;
   border-radius: 100px;
+  background: var(--perfil-actual);
   color: #ffffff;
   margin-bottom: 18px;
 }
@@ -1110,7 +1134,12 @@ a:focus-visible,
 }
 
 /* ── Banner Offline ─────────────────────────────────────────── */
+/* El aviso se oculta con el atributo `hidden`, no con un `style="display:none"`
+   inline: los estilos en línea son lo que obligaba a llevar `unsafe-inline` en
+   la CSP. Como `display: flex` gana a la regla del agente de usuario para
+   `[hidden]`, hace falta la regla explícita de abajo. */
 .offline-banner {
+  display: flex;
   position: fixed;
   bottom: 0;
   left: 0;
@@ -1126,6 +1155,27 @@ a:focus-visible,
   justify-content: center;
   gap: 8px;
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.3);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* ── Aviso cuando no hay JavaScript ─────────────────────────── */
+.sin-js {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 40px;
+  text-align: center;
+  background: var(--fondo);
+  color: #cccccc;
+}
+
+.sin-js h1 {
+  margin-bottom: 16px;
 }
 
 /* ── Skeleton Loading ───────────────────────────────────────── */

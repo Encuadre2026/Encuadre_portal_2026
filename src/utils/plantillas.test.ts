@@ -58,7 +58,7 @@ describe('tarjetaDatos', () => {
   // cada vista enseñaba los mismos datos con adornos distintos. Con una sola
   // definición eso no puede repetirse, y esto lo afirma.
   it('enseña el ID de participante sea cual sea el estado', () => {
-    const aprobado = vistaAprobado(P, estadoDe(true, true), { grande: '', pequeno: '', descarga: '' }, '');
+    const aprobado = vistaAprobado(P, estadoDe(true, true), '', '');
     const pendiente = vistaPendiente(P, estadoDe(false, false), false);
     const revision = vistaPendiente(P, estadoDe(false, true), true);
 
@@ -83,8 +83,7 @@ describe('tarjetaDatos', () => {
 // ── Vistas completas ────────────────────────────────────────────
 describe('vistas completas', () => {
   it('la de pago aprobado mantiene su forma', () => {
-    const qr = { grande: '[QR-280]', pequeno: '[QR-150]', descarga: '[QR-500]' };
-    expect(vistaAprobado(P, estadoDe(true, true), qr, '/Encuadre_portal_2026')).toMatchSnapshot();
+    expect(vistaAprobado(P, estadoDe(true, true), '[QR]', '/Encuadre_portal_2026')).toMatchSnapshot();
   });
 
   it('la de comprobante pendiente mantiene su forma', () => {
@@ -120,5 +119,28 @@ describe('plantillas sueltas', () => {
 
   it('el formulario anuncia el mismo límite que se aplica', () => {
     expect(formularioComprobante()).toContain('Máximo 5 MB');
+  });
+});
+
+// ── Perfil ──────────────────────────────────────────────────────
+describe('el perfil no viaja como nombre de clase', () => {
+  // Antes era `class="perfil-badge ${p.perfil}"`: el texto del servidor acababa
+  // dentro de un atributo, y bastaba con que llegara en minúsculas para que el
+  // badge perdiera el color sin que nada fallara.
+  it('normaliza el perfil aunque cambie la forma de escribirlo', () => {
+    for (const escrito of ['Estudiante', 'estudiante', '  ESTUDIANTE  ']) {
+      expect(tarjetaDatos({ ...P, perfil: escrito })).toContain('data-perfil="estudiante"');
+    }
+  });
+
+  it('un perfil desconocido cae en el genérico, no en un atributo arbitrario', () => {
+    const html = tarjetaDatos({ ...P, perfil: 'Ponente invitado' });
+    expect(html).toContain('data-perfil="generico"');
+  });
+
+  it('el gafete y la tarjeta usan el mismo perfil', () => {
+    const html = vistaAprobado({ ...P, perfil: 'Profesor' }, estadoDe(true, true), '[QR]', '');
+    // Uno en la tarjeta de datos y otro en el gafete.
+    expect(html.match(/data-perfil="profesor"/g)).toHaveLength(2);
   });
 });

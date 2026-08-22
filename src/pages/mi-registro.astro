@@ -22,6 +22,13 @@ import Spinner from '../components/Spinner.astro';
   const API_BASE = import.meta.env.PUBLIC_API_BASE || 'https://encuadre-2026-api.sitio-392.workers.dev';
   const BASE_URL = import.meta.env.BASE_URL || '';
 
+  // Forma del token del registro. Se valida antes de tocar la red para no
+  // mandar al Worker cualquier cosa que venga en la URL; está documentado en
+  // `SECURITY.md`. El guion no necesita escaparse dentro de una clase de
+  // caracteres cuando va al final.
+  const FORMA_DEL_TOKEN = /^[A-Za-z0-9-]+$/;
+  const LARGO_MAXIMO_TOKEN = 30;
+
   const NO_ENCONTRADO =
     'No encontramos ningún registro para este enlace. Revisa que sea el enlace completo que recibiste por correo, o contáctanos si crees que es un error.';
 
@@ -37,7 +44,7 @@ import Spinner from '../components/Spinner.astro';
       );
       return;
     }
-    if (!/^[A-Za-z0-9\-]+$/.test(token) || token.length > 30) {
+    if (!FORMA_DEL_TOKEN.test(token) || token.length > LARGO_MAXIMO_TOKEN) {
       renderError(
         'Enlace no válido',
         'El formato del enlace no es correcto. Usa el enlace original que recibiste en tu correo de confirmación.'
