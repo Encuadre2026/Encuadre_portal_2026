@@ -1,4 +1,4 @@
-import { formatFecha, perfilColor } from './portal';
+import { formatFecha, normalizarPerfil } from './portal';
 import { MAX_PDF_MB, type Participante } from './api';
 
 /**
@@ -80,7 +80,7 @@ export function tarjetaDatos(p: Participante): string {
           </div>
           <div class="dato-item">
             <span class="dato-label">Perfil</span>
-            <span class="dato-valor"><span class="perfil-badge ${p.perfil}">${p.perfil}</span></span>
+            <span class="dato-valor"><span class="perfil-badge" data-perfil="${normalizarPerfil(p.perfil)}">${p.perfil}</span></span>
           </div>
           <div class="dato-item full">
             <span class="dato-label">Taller asignado</span>
@@ -107,48 +107,56 @@ export function cuentaAtras(): string {
       </div>`;
 }
 
-export function tarjetaQr(p: Participante, qrGrande: string, qrDescarga: string): string {
+/**
+ * Tarjeta del QR de acceso.
+ *
+ * Recibe un único data URL. Antes se generaban tres códigos —280, 150 y 500 px—
+ * del mismo `id_participante` y encima en serie, con tres `await` seguidos. Un
+ * QR es el mismo dibujo a cualquier tamaño, así que basta con generarlo una vez
+ * grande y dejar que `width`/`height` lo escalen: además se ve más nítido en
+ * pantallas de alta densidad y al imprimir el gafete.
+ */
+export function tarjetaQr(p: Participante, qr: string): string {
   return `
       <div class="card card-separada">
         <p class="card-title">Código QR de acceso</p>
         <div class="qr-wrapper">
           <div class="qr-img-box">
-            <img id="qr-img" src="${qrGrande}" alt="QR ${p.id_participante}" width="240" height="240" />
+            <img id="qr-img" src="${qr}" alt="QR ${p.id_participante}" width="240" height="240" />
           </div>
           <div>
             <div class="qr-id-label">ID de participante</div>
             <div class="qr-id-value">${p.id_participante}</div>
           </div>
-          <a class="btn btn-outline" href="${qrDescarga}" download="QR_${p.id_participante}.png" target="_blank" aria-label="Descargar código QR en alta resolución">
+          <a class="btn btn-outline" href="${qr}" download="QR_${p.id_participante}.png" aria-label="Descargar código QR en alta resolución">
             Descargar QR
           </a>
         </div>
       </div>`;
 }
 
-export function gafete(p: Participante, qrPequeno: string, baseUrl: string): string {
-  const color = perfilColor(p.perfil);
+export function gafete(p: Participante, qr: string, baseUrl: string): string {
   return `
       <div class="card gafete-print-section gafete-sticky">
         <p class="card-title">Tu gafete virtual</p>
 
         <div class="gafete-preview-wrapper">
           <div class="gafete-corte">
-            <div class="gafete" style="border-top: 6px solid ${color}">
+            <div class="gafete" data-perfil="${normalizarPerfil(p.perfil)}">
               <div class="gafete-lanyard"><div class="gafete-hole"></div></div>
               <div class="gafete-top">
-                <img class="gafete-logo" src="${baseUrl}/logo_futurologia_encuadre.png" alt="Encuadre 2026" />
+                <img class="gafete-logo" src="${baseUrl}/logo_futurologia_encuadre.webp" alt="Encuadre 2026" />
                 <div class="gafete-evento">36 FTD &middot; Futurología &middot; Encuadre</div>
                 <div class="gafete-fecha">29, 30 y 31 de octubre de 2026 &middot; Aguascalientes</div>
               </div>
               <div class="gafete-body">
                 <div class="gafete-nombre">${p.nombre}</div>
-                <span class="gafete-perfil-badge" style="background:${color}">${p.perfil}</span>
+                <span class="gafete-perfil-badge">${p.perfil}</span>
                 <div class="gafete-taller-label">Taller</div>
                 <div class="gafete-taller-nombre">${p.taller}</div>
                 <div class="gafete-footer">
                   <div class="gafete-qr-small">
-                    <img src="${qrPequeno}" alt="QR ${p.id_participante}" width="100" height="100" />
+                    <img src="${qr}" alt="QR ${p.id_participante}" width="100" height="100" />
                   </div>
                   <div>
                     <div class="gafete-id-label">ID de Participante</div>
@@ -160,7 +168,7 @@ export function gafete(p: Participante, qrPequeno: string, baseUrl: string): str
           </div>
         </div>
 
-        <button class="btn btn-primary btn-full btn-imprimir" onclick="window.print()" aria-label="Imprimir tu gafete virtual">
+        <button class="btn btn-primary btn-full btn-imprimir" id="btn-imprimir" type="button" aria-label="Imprimir tu gafete virtual">
           Imprimir gafete
         </button>
       </div>`;
@@ -227,31 +235,22 @@ export function paginaError(titulo: string, desc: string, conReintento: boolean)
 }
 
 /** Vista completa de quien ya tiene el pago aprobado. */
-export function vistaAprobado(
-  p: Participante,
-  estado: EstadoPortal,
-  qr: { grande: string; pequeno: string; descarga: string },
-  baseUrl: string,
-): string {
+export function vistaAprobado(p: Participante, estado: EstadoPortal, qr: string, baseUrl: string): string {
   return `
     <div class="dashboard-layout">
       <div class="dashboard-left">
         ${bannerEstado(estado)}
         ${tarjetaDatos(p)}
-        ${tarjetaQr(p, qr.grande, qr.descarga)}
+        ${tarjetaQr(p, qr)}
       </div>
       <div class="dashboard-right">
-        ${gafete(p, qr.pequeno, baseUrl)}
+        ${gafete(p, qr, baseUrl)}
       </div>
     </div>`;
 }
 
 /** Vista de quien todavía no tiene el pago aprobado. */
-export function vistaPendiente(
-  p: Participante,
-  estado: EstadoPortal,
-  tieneComprobante: boolean,
-): string {
+export function vistaPendiente(p: Participante, estado: EstadoPortal, tieneComprobante: boolean): string {
   const cuenta = !tieneComprobante && p.fecha_expiracion ? cuentaAtras() : '';
   const comprobante = tieneComprobante ? comprobanteRecibido() : formularioComprobante();
   return `

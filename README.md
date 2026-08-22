@@ -40,6 +40,7 @@ Portal web oficial para los participantes del 36 Encuentro Nacional de Escuelas 
 │   │   └── Layout.astro           # Esqueleto HTML5, metadatos SEO y contenedor para alertas
 │   ├── pages/                 # Enrutamiento público del portal
 │   │   ├── mi-registro.astro      # Controlador ligero de la vista principal del participante
+│   │   ├── manifest.json.ts       # Manifiesto generado a partir de la base configurada
 │   │   └── 404.astro              # Página de ruta no encontrada
 │   │                              # (la redirección de «/» se declara en astro.config.mjs)
 │   ├── styles/                # Sistema unified de diseño
@@ -47,9 +48,13 @@ Portal web oficial para los participantes del 36 Encuentro Nacional de Escuelas 
 │   └── utils/                 # Módulos de lógica y tipado en TypeScript
 │       ├── api.ts                 # Cliente del Worker: sesión, errores tipados, subida
 │       ├── portal.ts              # Presentación: escapado XSS, fechas, QR, cuenta atrás
+│       ├── conexion.ts            # Aviso de «sin conexión» (módulo aparte por la CSP)
 │       ├── plantillas.ts          # HTML como funciones puras, comprobables sin navegador
 │       ├── vistas.ts              # Composición y cableado de eventos sobre el DOM
-│       └── *.test.ts              # Pruebas con Vitest, incluidas instantáneas del HTML
+│       ├── *.test.ts              # Pruebas con Vitest, incluidas instantáneas del HTML
+│       └── vistas.dom.test.ts     # Repintado, temporizador y subida, sobre jsdom
+├── scripts/
+│   └── verificar-salida.mjs   # Comprobaciones sobre `dist/` (lo que depende de `base`)
 ├── .env.example               # Plantilla documentada de variables de entorno
 ├── astro.config.mjs           # Configuración de compilación para entorno estático
 └── package.json               # Configuración de scripts y dependencias oficiales
@@ -65,12 +70,13 @@ Los siguientes comandos deben ejecutarse desde la terminal situada en el directo
 | :--- | :--- |
 | `npm install` | Instala las dependencias del proyecto y genera el árbol de paquetes |
 | `npm run dev` | Inicia el servidor de desarrollo local de forma interactiva (`http://localhost:4321`) |
-| `npm run build` | Compila los activos finales en `./dist/` |
+| `npm run build` | Compila los activos finales en `./dist/` y comprueba la salida |
 | `npm run preview` | Verifica de manera local el comportamiento de los archivos compilados |
-| `npm run lint` | ESLint sobre `src/` |
+| `npm run lint` | ESLint sobre `src/` y `scripts/`, incluidos los `.astro` |
 | `npm run check` | `astro check`: la única comprobación que compila de verdad el TypeScript del navegador |
-| `npm test` | Vitest: 44 pruebas, sin necesidad de navegador |
-| `npm run verificar` | Los tres anteriores seguidos. Es lo mismo que ejecuta CI |
+| `npm test` | Vitest: 76 pruebas. Las de DOM usan jsdom; el resto no necesita navegador |
+| `npm run verificar` | Lint, tipos y pruebas seguidos |
+| `npm run verificar:salida` | Comprueba `dist/`: base, scripts en línea y manifiesto |
 
 ### Verificación antes de publicar
 
@@ -80,6 +86,25 @@ como puerta antes de desplegar: si falla, no se publica.
 Hasta agosto de 2026 el workflow solo compilaba. El linter y las pruebas ya
 existían y **no los ejecutaba nadie**; `astro check` ni siquiera estaba
 instalado, y en su primera pasada encontró cuatro errores de tipos.
+
+### Por qué se comprueba también el sitio compilado
+
+Hay fallos que ninguna de esas tres puertas puede ver, porque no están en el
+código sino en lo que sale de él:
+
+- La redirección de `/` apuntaba a `/mi-registro` en vez de
+  `/Encuadre_portal_2026/mi-registro`. Astro antepone `base` a la clave de un
+  redirect, pero no a su destino, así que la raíz del portal mandaba a la gente
+  al 404 de GitHub. En `npm run dev` funcionaba, porque el servidor de
+  desarrollo resuelve la ruta igual.
+- Astro incrusta en el HTML los scripts pequeños, y la política de seguridad
+  (`script-src 'self'`) no los ejecuta. Un script incrustado desaparece sin
+  error.
+
+`scripts/verificar-salida.mjs` comprueba las dos cosas sobre `dist/`, además de
+que el manifiesto apunte a iconos que existan y que el `maskable` no sea el
+mismo archivo que el normal. Corre al final de `npm run build`, así que tanto el
+pull request como el despliegue pasan por él.
 
 ---
 
@@ -109,11 +134,16 @@ sin salida: en vez de un error, el portal se repinta con el gafete y el QR.
 
 ### Configuración para pruebas en desarrollo:
 1. Copia el archivo `.env.example` del directorio raíz con el nombre `.env`.
-2. Asigna al valor de `PUBLIC_API_BASE` la dirección de tu servidor de pruebas o entorno local:
+2. Descomenta `PUBLIC_API_BASE` y apúntalo a tu servidor de pruebas o entorno local:
    ```env
    PUBLIC_API_BASE=http://localhost:8787
    ```
-*(Nota: En ausencia de la variable o en despliegues automatizados de producción, el sistema resolverá de forma predeterminada al endpoint oficial del evento).*
+
+La línea viene comentada a propósito. Antes `.env.example` traía escrita la URL
+de producción, así que copiarlo tal cual dejaba el entorno de desarrollo
+hablando con la base de datos real. En ausencia de la variable —y en el
+despliegue automatizado— el portal resuelve al endpoint oficial del evento, que
+lleva escrito como respaldo en `src/pages/mi-registro.astro`.
 
 ---
 

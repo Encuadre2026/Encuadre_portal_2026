@@ -60,12 +60,11 @@ const campos = Object.keys(CARGAS) as CampoDeTexto[];
 // modo que la prueba no dependa de cuál de ellos toque el campo.
 function todoElHtml(p: Participante): string {
   const estado = estadoDe(false, false);
-  const qr = { grande: '', pequeno: '', descarga: '' };
   return [
     tarjetaDatos(p),
     vistaPendiente(p, estado, false),
     vistaPendiente(p, estado, true),
-    vistaAprobado(p, estadoDe(true, true), qr, ''),
+    vistaAprobado(p, estadoDe(true, true), '', ''),
   ].join('\n');
 }
 

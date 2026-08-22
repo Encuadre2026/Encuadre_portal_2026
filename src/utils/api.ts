@@ -60,8 +60,14 @@ interface CuerpoApi {
   ok?: boolean;
   codigo?: string;
   mensaje?: string;
+  /**
+   * TODO(contrato-v1): retirar cuando el Worker deje de emitir el alias inglés.
+   * Es compatibilidad transitoria con el contrato viejo, no parte del actual.
+   * Condición para borrarlo: que `mensaje` venga en todas las respuestas de
+   * error del Worker en producción. Sin una condición escrita, este tipo de
+   * puente se queda diez años.
+   */
   message?: string;
-  encontrado?: boolean;
   participante?: Participante;
   [clave: string]: unknown;
 }
@@ -74,17 +80,12 @@ interface CuerpoApi {
  * simplemente deja de aparecer.
  */
 function motivoDelError(cuerpo: CuerpoApi | null, status: number): ErrorApi {
-  const mensaje =
-    cuerpo?.mensaje || cuerpo?.message || 'No pudimos completar la operación. Intenta de nuevo.';
+  const mensaje = cuerpo?.mensaje || cuerpo?.message || 'No pudimos completar la operación. Intenta de nuevo.';
   return new ErrorApi(mensaje, cuerpo?.codigo, status);
 }
 
 /** Consulta el registro asociado a un token de portal. */
-export async function obtenerParticipante(
-  apiBase: string,
-  token: string,
-  signal?: AbortSignal,
-): Promise<Participante> {
+export async function obtenerParticipante(apiBase: string, token: string, signal?: AbortSignal): Promise<Participante> {
   let res: Response;
   try {
     res = await fetch(`${apiBase}/api/participante?id=${encodeURIComponent(token)}`, { signal });
@@ -101,18 +102,30 @@ export async function obtenerParticipante(
 
   if (!res.ok || cuerpo?.ok === false) throw motivoDelError(cuerpo, res.status);
 
-  // `encontrado` es la clave del contrato viejo. Se sigue aceptando mientras el
-  // Worker la emita, pero lo que decide es que venga el participante.
+  // Lo que decide es que venga el participante, no la bandera `encontrado` del
+  // contrato viejo: el Worker puede seguir emitiéndola, pero el portal no la lee.
   if (!cuerpo?.participante) {
-    throw new ErrorApi(
-      'No encontramos ningún registro para este enlace.',
-      'NO_ENCONTRADO',
-      res.status,
-    );
+    throw new ErrorApi('No encontramos ningún registro para este enlace.', 'NO_ENCONTRADO', res.status);
   }
 
   return cuerpo.participante;
 }
+
+/**
+ * Cuánto se tolera **sin avanzar** antes de dar la subida por muerta.
+ *
+ * Ojo con la diferencia: `xhr.timeout` mide el tiempo *total* de la petición, y
+ * estaba en 30 s. Un comprobante de 5 MB —el máximo que se acepta— tarda unos
+ * 40 s por una subida de 1 Mbps, que es lo normal en el wifi de un campus o en
+ * datos móviles saturados. Es decir, abortaba subidas que iban perfectamente y
+ * enseñaba «La subida tardó demasiado», justo en el escenario más probable el
+ * día del evento.
+ *
+ * Lo que sí indica un problema real es que deje de haber progreso. Este
+ * temporizador se reinicia con cada aviso de avance, así que una subida lenta
+ * puede tardar lo que necesite mientras siga moviéndose.
+ */
+const INACTIVIDAD_MS = 60_000;
 
 /**
  * Transporte de la subida.
@@ -134,29 +147,60 @@ function enviarConProgreso(
     // Con FormData no se fija Content-Type: lo pone el navegador con su
     // separador (boundary).
 
+    let vigilante: ReturnType<typeof setTimeout> | undefined;
+    let terminado = false;
+
+    const detenerVigilante = () => {
+      if (vigilante !== undefined) clearTimeout(vigilante);
+      vigilante = undefined;
+    };
+
+    /** Cierra la promesa una sola vez y deja de vigilar. */
+    const finalizar = (accion: () => void) => {
+      if (terminado) return;
+      terminado = true;
+      detenerVigilante();
+      accion();
+    };
+
+    const reiniciarVigilante = () => {
+      detenerVigilante();
+      vigilante = setTimeout(() => {
+        finalizar(() => {
+          xhr.abort();
+          reject(new ErrorApi('La subida se quedó sin avanzar. Revisa tu conexión e intenta de nuevo.'));
+        });
+      }, INACTIVIDAD_MS);
+    };
+
     xhr.upload.onprogress = (e) => {
+      reiniciarVigilante();
       if (e.lengthComputable && e.total > 0) {
         onProgress(Math.round((e.loaded / e.total) * 100));
       }
     };
 
-    xhr.onload = () => {
-      let parseado: CuerpoApi | null = null;
-      try {
-        parseado = JSON.parse(xhr.responseText) as CuerpoApi;
-      } catch {
-        // Respuesta sin JSON legible; el estado sigue siendo informativo.
-      }
-      resolve({ status: xhr.status, cuerpo: parseado });
-    };
+    // El archivo ya salió entero, pero el Worker todavía tiene que guardarlo en
+    // R2 y responder. Ese tramo también cuenta como actividad.
+    xhr.upload.onload = reiniciarVigilante;
+    xhr.onprogress = reiniciarVigilante;
+
+    xhr.onload = () =>
+      finalizar(() => {
+        let parseado: CuerpoApi | null = null;
+        try {
+          parseado = JSON.parse(xhr.responseText) as CuerpoApi;
+        } catch {
+          // Respuesta sin JSON legible; el estado sigue siendo informativo.
+        }
+        resolve({ status: xhr.status, cuerpo: parseado });
+      });
 
     // Solo se rechaza cuando de verdad no hubo respuesta.
     xhr.onerror = () =>
-      reject(new ErrorApi('No pudimos conectarnos al servidor. Revisa tu conexión.'));
-    xhr.timeout = 30_000;
-    xhr.ontimeout = () =>
-      reject(new ErrorApi('La subida tardó demasiado. Intenta de nuevo.'));
+      finalizar(() => reject(new ErrorApi('No pudimos conectarnos al servidor. Revisa tu conexión.')));
 
+    reiniciarVigilante();
     xhr.send(cuerpo);
   });
 }
@@ -180,11 +224,7 @@ export async function subirComprobante(
   formData.append('comprobante', archivo);
   formData.append('comprobantePdfNombre', archivo.name);
 
-  const { status, cuerpo } = await enviarConProgreso(
-    `${apiBase}/api/participante/comprobante`,
-    formData,
-    onProgress,
-  );
+  const { status, cuerpo } = await enviarConProgreso(`${apiBase}/api/participante/comprobante`, formData, onProgress);
 
   const correcto = status >= 200 && status < 300 && cuerpo?.ok !== false;
   if (!correcto) throw motivoDelError(cuerpo, status);

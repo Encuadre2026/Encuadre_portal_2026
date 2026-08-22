@@ -8,62 +8,115 @@ export interface Props {
   noindex?: boolean;
 }
 
-const { 
-  title = "Portal del Participante — Encuadre 2026", 
-  description = "Consulta el estado de tu registro, descarga tu QR e imprime tu gafete para el 36 FTD Encuadre 2026.",
-  noindex = false 
+const {
+  title = 'Portal del Participante — Encuadre 2026',
+  description = 'Consulta el estado de tu registro, descarga tu QR e imprime tu gafete para el 36 FTD Encuadre 2026.',
+  noindex = false,
 } = Astro.props;
 
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
-const ogImage = new URL(import.meta.env.BASE_URL + '/logo_futurologia_encuadre.png', Astro.site).href;
+const ogImage = new URL(`${base}/logo_futurologia_encuadre.png`, Astro.site).href;
+
+// El origen del Worker se saca de la misma variable que usa el cliente, para
+// que la política no se quede apuntando a un endpoint que ya no se usa.
+const apiBase = import.meta.env.PUBLIC_API_BASE || 'https://encuadre-2026-api.sitio-392.workers.dev';
+const origenApi = new URL(apiBase).origin;
+
+/**
+ * Política de seguridad de contenidos.
+ *
+ * El portal construye su HTML con cadenas y lo inserta con `innerHTML`. El
+ * escapado de `sanearParticipante` es la primera defensa y está comprobado por
+ * `vistas.test.ts`, pero depende de que nadie se despiste al añadir un campo.
+ * Esta es la segunda: aunque se colara una etiqueta, sin `unsafe-inline` en
+ * `script-src` el navegador no ejecuta lo que venga dentro.
+ *
+ * Va en una etiqueta `<meta>` porque GitHub Pages no permite fijar cabeceras.
+ * Eso tiene un límite conocido: `frame-ancestors` —la defensa contra el
+ * clickjacking— solo funciona como cabecera y aquí se ignoraría, así que ni se
+ * declara. Si el portal se muda a un servidor propio o detrás de Cloudflare,
+ * conviene servir esto mismo como cabecera y añadirla.
+ *
+ * `style-src` sí conserva `unsafe-inline`: quedan atributos `style=""` en el
+ * aviso de «JavaScript requerido» y en el esqueleto de carga, y el riesgo de un
+ * estilo inyectado no se parece al de un script.
+ */
+const csp = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:", // los QR se generan en el navegador como data: URL
+  "font-src 'self'",
+  `connect-src 'self' ${origenApi}`,
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'none'",
+].join('; ');
 ---
-<!DOCTYPE html>
+
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{title}</title>
-  <meta name="description" content={description} />
-  {noindex && <meta name="robots" content="noindex, nofollow" />}
-  <link rel="icon" type="image/svg+xml" href={import.meta.env.BASE_URL + "/favicon.svg"} />
-  <link rel="icon" type="image/x-icon" href={import.meta.env.BASE_URL + "/favicon.ico"} />
-  <link rel="manifest" href={import.meta.env.BASE_URL + "/manifest.json"} />
-  <link rel="canonical" href={canonicalURL.href} />
-  <meta name="theme-color" content="#151515" />
-  <meta property="og:title" content={title} />
-  <meta property="og:description" content={description} />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content={canonicalURL.href} />
-  <meta property="og:image" content={ogImage} />
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content={title} />
-  <meta name="twitter:description" content={description} />
-</head>
-<body>
-  <noscript>
-    <div style="padding:40px;text-align:center;font-family:sans-serif;color:#ccc;background:#151515;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-      <h1 style="margin-bottom:16px;">JavaScript requerido</h1>
-      <p>Este portal necesita JavaScript habilitado para funcionar correctamente.</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content={csp} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
+    <link rel="icon" type="image/x-icon" href={`${base}/favicon.ico`} />
+    <link rel="apple-touch-icon" href={`${base}/icono-192.png`} />
+    <link rel="manifest" href={`${base}/manifest.json`} />
+    <link rel="canonical" href={canonicalURL.href} />
+    <meta name="theme-color" content="#151515" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalURL.href} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+  </head>
+  <body>
+    <noscript>
+      <div class="sin-js">
+        <h1>JavaScript requerido</h1>
+        <p>Este portal necesita JavaScript habilitado para funcionar correctamente.</p>
+      </div>
+    </noscript>
+    <div class="portal-wrapper">
+      <slot />
+      {/*
+        Contenedor global de alertas (toasts).
+
+        `aria-live` no es un adorno: los toasts son el único canal por el que se
+        comunican los errores de la subida —«solo PDF», «supera los 5 MB», el
+        motivo que devuelve el Worker—. Sin él, quien usa un lector de pantalla
+        pulsaba «Subir comprobante» y no recibía ninguna respuesta.
+
+        Es `polite` y no `assertive` porque no debe cortar lo que se esté
+        leyendo; y `atomic` para que el mensaje se anuncie entero.
+      */}
+      <div
+        class="toast-container"
+        id="toast-container"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+      </div>
     </div>
-  </noscript>
-  <div class="portal-wrapper">
-    <slot />
-    <!-- Contenedor global para mostrar alertas y notificaciones (toasts) -->
-    <div class="toast-container" id="toast-container"></div>
-  </div>
-  <div id="offline-banner" class="offline-banner" style="display:none;" role="alert">
-    ⚠️ Sin conexión a internet
-  </div>
-  <script is:inline>
-    (function() {
-      function u() {
-        var b = document.getElementById('offline-banner');
-        if (b) b.style.display = navigator.onLine ? 'none' : 'flex';
-      }
-      window.addEventListener('online', u);
-      window.addEventListener('offline', u);
-      u();
-    })();
-  </script>
-</body>
+    <div id="offline-banner" class="offline-banner" hidden role="alert">
+      ⚠️ Sin conexión a internet
+    </div>
+    <script>
+      // El módulo se importa en vez de escribir la lógica aquí: Astro incrusta
+      // en el HTML los scripts pequeños y autocontenidos, y la CSP de arriba
+      // prohíbe los scripts en línea. Con la importación se emite como archivo.
+      import { vigilarConexion } from '../utils/conexion';
+      vigilarConexion(document.getElementById('offline-banner'));
+    </script>
+  </body>
 </html>

@@ -15,7 +15,7 @@ exports[`tarjetaDatos > mantiene su forma 1`] = `
           </div>
           <div class="dato-item">
             <span class="dato-label">Perfil</span>
-            <span class="dato-valor"><span class="perfil-badge Estudiante">Estudiante</span></span>
+            <span class="dato-valor"><span class="perfil-badge" data-perfil="estudiante">Estudiante</span></span>
           </div>
           <div class="dato-item full">
             <span class="dato-label">Taller asignado</span>
@@ -58,7 +58,7 @@ exports[`vistas completas > la de comprobante en revisión mantiene su forma 1`]
           </div>
           <div class="dato-item">
             <span class="dato-label">Perfil</span>
-            <span class="dato-valor"><span class="perfil-badge Estudiante">Estudiante</span></span>
+            <span class="dato-valor"><span class="perfil-badge" data-perfil="estudiante">Estudiante</span></span>
           </div>
           <div class="dato-item full">
             <span class="dato-label">Taller asignado</span>
@@ -113,7 +113,7 @@ exports[`vistas completas > la de comprobante pendiente mantiene su forma 1`] = 
           </div>
           <div class="dato-item">
             <span class="dato-label">Perfil</span>
-            <span class="dato-valor"><span class="perfil-badge Estudiante">Estudiante</span></span>
+            <span class="dato-valor"><span class="perfil-badge" data-perfil="estudiante">Estudiante</span></span>
           </div>
           <div class="dato-item full">
             <span class="dato-label">Taller asignado</span>
@@ -174,7 +174,7 @@ exports[`vistas completas > la de pago aprobado mantiene su forma 1`] = `
           </div>
           <div class="dato-item">
             <span class="dato-label">Perfil</span>
-            <span class="dato-valor"><span class="perfil-badge Estudiante">Estudiante</span></span>
+            <span class="dato-valor"><span class="perfil-badge" data-perfil="estudiante">Estudiante</span></span>
           </div>
           <div class="dato-item full">
             <span class="dato-label">Taller asignado</span>
@@ -195,13 +195,13 @@ exports[`vistas completas > la de pago aprobado mantiene su forma 1`] = `
         <p class="card-title">Código QR de acceso</p>
         <div class="qr-wrapper">
           <div class="qr-img-box">
-            <img id="qr-img" src="[QR-280]" alt="QR ENC-042" width="240" height="240" />
+            <img id="qr-img" src="[QR]" alt="QR ENC-042" width="240" height="240" />
           </div>
           <div>
             <div class="qr-id-label">ID de participante</div>
             <div class="qr-id-value">ENC-042</div>
           </div>
-          <a class="btn btn-outline" href="[QR-500]" download="QR_ENC-042.png" target="_blank" aria-label="Descargar código QR en alta resolución">
+          <a class="btn btn-outline" href="[QR]" download="QR_ENC-042.png" aria-label="Descargar código QR en alta resolución">
             Descargar QR
           </a>
         </div>
@@ -214,21 +214,21 @@ exports[`vistas completas > la de pago aprobado mantiene su forma 1`] = `
 
         <div class="gafete-preview-wrapper">
           <div class="gafete-corte">
-            <div class="gafete" style="border-top: 6px solid #0a84ff">
+            <div class="gafete" data-perfil="estudiante">
               <div class="gafete-lanyard"><div class="gafete-hole"></div></div>
               <div class="gafete-top">
-                <img class="gafete-logo" src="/Encuadre_portal_2026/logo_futurologia_encuadre.png" alt="Encuadre 2026" />
+                <img class="gafete-logo" src="/Encuadre_portal_2026/logo_futurologia_encuadre.webp" alt="Encuadre 2026" />
                 <div class="gafete-evento">36 FTD &middot; Futurología &middot; Encuadre</div>
                 <div class="gafete-fecha">29, 30 y 31 de octubre de 2026 &middot; Aguascalientes</div>
               </div>
               <div class="gafete-body">
                 <div class="gafete-nombre">Ana Victoria de la Rosa García</div>
-                <span class="gafete-perfil-badge" style="background:#0a84ff">Estudiante</span>
+                <span class="gafete-perfil-badge">Estudiante</span>
                 <div class="gafete-taller-label">Taller</div>
                 <div class="gafete-taller-nombre">Futurología aplicada al diseño</div>
                 <div class="gafete-footer">
                   <div class="gafete-qr-small">
-                    <img src="[QR-150]" alt="QR ENC-042" width="100" height="100" />
+                    <img src="[QR]" alt="QR ENC-042" width="100" height="100" />
                   </div>
                   <div>
                     <div class="gafete-id-label">ID de Participante</div>
@@ -240,7 +240,7 @@ exports[`vistas completas > la de pago aprobado mantiene su forma 1`] = `
           </div>
         </div>
 
-        <button class="btn btn-primary btn-full btn-imprimir" onclick="window.print()" aria-label="Imprimir tu gafete virtual">
+        <button class="btn btn-primary btn-full btn-imprimir" id="btn-imprimir" type="button" aria-label="Imprimir tu gafete virtual">
           Imprimir gafete
         </button>
       </div>

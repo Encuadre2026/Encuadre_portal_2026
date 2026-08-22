@@ -1,12 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { escapeHTML, formatFecha, perfilColor } from './portal';
+import { escapeHTML, formatFecha, normalizarPerfil } from './portal';
 
 // ── escapeHTML ──────────────────────────────────────────────────
 describe('escapeHTML', () => {
   it('escapa caracteres HTML peligrosos', () => {
-    expect(escapeHTML('<script>alert("xss")</script>')).toBe(
-      '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;',
-    );
+    expect(escapeHTML('<script>alert("xss")</script>')).toBe('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
   });
 
   it('escapa ampersands', () => {
@@ -14,7 +12,7 @@ describe('escapeHTML', () => {
   });
 
   it('escapa comillas simples', () => {
-    expect(escapeHTML("it's")).toBe("it&#39;s");
+    expect(escapeHTML("it's")).toBe('it&#39;s');
   });
 
   it('retorna cadena vacía para null y undefined', () => {
@@ -61,29 +59,40 @@ describe('formatFecha', () => {
   });
 });
 
-// ── perfilColor ────────────────────────────────────────────────
-describe('perfilColor', () => {
-  it('retorna azul para Estudiante', () => {
-    expect(perfilColor('Estudiante')).toBe('#0a84ff');
+// ── normalizarPerfil ───────────────────────────────────────────
+//
+// Sustituye a `perfilColor`, que devolvía un hexadecimal. El color ahora vive
+// solo en `portal.css`; aquí únicamente se decide de qué perfil se trata.
+describe('normalizarPerfil', () => {
+  it('reconoce los cuatro perfiles del evento', () => {
+    expect(normalizarPerfil('Estudiante')).toBe('estudiante');
+    expect(normalizarPerfil('Profesor')).toBe('profesor');
+    expect(normalizarPerfil('Profesional')).toBe('profesional');
+    expect(normalizarPerfil('Investigador')).toBe('investigador');
   });
 
-  it('retorna verde para Profesor', () => {
-    expect(perfilColor('Profesor')).toBe('#30d158');
+  it('ignora mayúsculas y espacios sobrantes', () => {
+    // El valor viene de captura manual. Con el nombre de clase antiguo, un
+    // «estudiante» en minúsculas perdía el color en silencio.
+    expect(normalizarPerfil('ESTUDIANTE')).toBe('estudiante');
+    expect(normalizarPerfil('  Profesor  ')).toBe('profesor');
+    expect(normalizarPerfil('pRoFeSiOnAl')).toBe('profesional');
   });
 
-  it('retorna naranja para Profesional', () => {
-    expect(perfilColor('Profesional')).toBe('#ff9f0a');
+  it('ignora los acentos', () => {
+    expect(normalizarPerfil('Investigadór')).toBe('investigador');
   });
 
-  it('retorna morado para Investigador', () => {
-    expect(perfilColor('Investigador')).toBe('#bf5af2');
+  it('cae en el genérico cuando no reconoce el perfil', () => {
+    expect(normalizarPerfil('Ponente invitado')).toBe('generico');
+    expect(normalizarPerfil('')).toBe('generico');
+    expect(normalizarPerfil(null)).toBe('generico');
+    expect(normalizarPerfil(undefined)).toBe('generico');
   });
 
-  it('retorna gris para perfiles desconocidos', () => {
-    expect(perfilColor('Otro')).toBe('#6b7280');
-  });
-
-  it('retorna gris para cadena vacía', () => {
-    expect(perfilColor('')).toBe('#6b7280');
+  it('nunca devuelve algo que pueda escapar de un atributo', () => {
+    // Lo que sale es siempre una de cinco etiquetas conocidas, así que el texto
+    // del servidor ya no puede acabar dentro de `data-perfil`.
+    expect(normalizarPerfil('"><img src=x onerror="alert(1)">')).toBe('generico');
   });
 });
