@@ -1,4 +1,4 @@
-import { formatFecha, normalizarPerfil } from './portal';
+import { esFechaValida, formatFecha, normalizarPerfil } from './portal';
 import { MAX_PDF_MB, type Participante } from './api';
 
 /**
@@ -108,6 +108,19 @@ export function cuentaAtras(): string {
 }
 
 /**
+ * Aviso que ocupa el lugar del código cuando no se pudo generar.
+ *
+ * `getQrUrl` devuelve una cadena vacía si la biblioteca falla, y un `src=""` no
+ * es un hueco: el navegador lo resuelve contra la URL actual, así que volvía a
+ * pedir la propia página —token incluido— para pintarla como si fuese una
+ * imagen, y el enlace de descarga bajaba ese HTML renombrado a `.png`.
+ */
+const AVISO_SIN_QR = `<p class="qr-no-disponible">
+            No pudimos generar tu código QR en este dispositivo. Vuelve a cargar la página;
+            si aun así no aparece, en el acceso basta con tu ID de participante.
+          </p>`;
+
+/**
  * Tarjeta del QR de acceso.
  *
  * Recibe un único data URL. Antes se generaban tres códigos —280, 150 y 500 px—
@@ -117,25 +130,41 @@ export function cuentaAtras(): string {
  * pantallas de alta densidad y al imprimir el gafete.
  */
 export function tarjetaQr(p: Participante, qr: string): string {
+  const codigo = qr
+    ? `<div class="qr-img-box">
+            <img id="qr-img" src="${qr}" alt="QR ${p.id_participante}" width="240" height="240" />
+          </div>`
+    : AVISO_SIN_QR;
+
+  const descarga = qr
+    ? `<a class="btn btn-outline" href="${qr}" download="QR_${p.id_participante}.png" aria-label="Descargar código QR en alta resolución">
+            Descargar QR
+          </a>`
+    : '';
+
   return `
       <div class="card card-separada">
         <p class="card-title">Código QR de acceso</p>
         <div class="qr-wrapper">
-          <div class="qr-img-box">
-            <img id="qr-img" src="${qr}" alt="QR ${p.id_participante}" width="240" height="240" />
-          </div>
+          ${codigo}
           <div>
             <div class="qr-id-label">ID de participante</div>
             <div class="qr-id-value">${p.id_participante}</div>
           </div>
-          <a class="btn btn-outline" href="${qr}" download="QR_${p.id_participante}.png" aria-label="Descargar código QR en alta resolución">
-            Descargar QR
-          </a>
+          ${descarga}
         </div>
       </div>`;
 }
 
 export function gafete(p: Participante, qr: string, baseUrl: string): string {
+  // Sin código no se pinta el recuadro blanco vacío: el gafete sigue sirviendo
+  // con el ID, que es lo que se teclea en el acceso si el QR no se puede leer.
+  const qrChico = qr
+    ? `<div class="gafete-qr-small">
+                    <img src="${qr}" alt="QR ${p.id_participante}" width="100" height="100" />
+                  </div>`
+    : '';
+
   return `
       <div class="card gafete-print-section gafete-sticky">
         <p class="card-title">Tu gafete virtual</p>
@@ -155,9 +184,7 @@ export function gafete(p: Participante, qr: string, baseUrl: string): string {
                 <div class="gafete-taller-label">Taller</div>
                 <div class="gafete-taller-nombre">${p.taller}</div>
                 <div class="gafete-footer">
-                  <div class="gafete-qr-small">
-                    <img src="${qr}" alt="QR ${p.id_participante}" width="100" height="100" />
-                  </div>
+                  ${qrChico}
                   <div>
                     <div class="gafete-id-label">ID de Participante</div>
                     <div class="gafete-id-value">${p.id_participante}</div>
@@ -251,7 +278,10 @@ export function vistaAprobado(p: Participante, estado: EstadoPortal, qr: string,
 
 /** Vista de quien todavía no tiene el pago aprobado. */
 export function vistaPendiente(p: Participante, estado: EstadoPortal, tieneComprobante: boolean): string {
-  const cuenta = !tieneComprobante && p.fecha_expiracion ? cuentaAtras() : '';
+  // La fecha tiene que ser legible, no solo estar presente: una cadena que no
+  // se puede parsear pintaba el rótulo «Tiempo restante» sobre un contador de
+  // `NaN` que además no paraba nunca.
+  const cuenta = !tieneComprobante && esFechaValida(p.fecha_expiracion) ? cuentaAtras() : '';
   const comprobante = tieneComprobante ? comprobanteRecibido() : formularioComprobante();
   return `
     ${bannerEstado(estado)}

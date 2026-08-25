@@ -107,6 +107,19 @@ describe('cuenta atrás', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it('con una fecha ilegible no pinta nada ni deja un intervalo corriendo', () => {
+    // `parsearFechaAPI` devuelve `NaN` y la resta también, pero `NaN <= 0` es
+    // falso: la rama de «plazo vencido» nunca se tomaba y el contador quedaba
+    // en «NaN días : NaN horas : NaN min : NaN seg», actualizándose para siempre.
+    vi.useFakeTimers();
+    hueco().innerHTML = '<div id="cd-inner"></div>';
+
+    iniciarCountdown('no-es-una-fecha');
+
+    expect(document.getElementById('cd-inner')?.textContent).toBe('');
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('dos arranques seguidos no dejan dos intervalos vivos', () => {
     vi.useFakeTimers();
     hueco().innerHTML = '<div id="cd-inner"></div>';
@@ -183,8 +196,8 @@ describe('renderError', () => {
 
 // ── Subida del comprobante ──────────────────────────────────────
 describe('setupUpload', () => {
-  async function prepararFormulario() {
-    await renderPortal({ ...P, fecha_expiracion: dentroDe(48) }, 'https://api.test', '', 'TOK-123');
+  async function prepararFormulario(extra: Partial<Participante> = {}) {
+    await renderPortal({ ...P, fecha_expiracion: dentroDe(48), ...extra }, 'https://api.test', '', 'TOK-123');
     return {
       input: document.getElementById('comp-input') as HTMLInputElement,
       boton: document.getElementById('btn-subir') as HTMLButtonElement,
@@ -290,6 +303,41 @@ describe('setupUpload', () => {
     await vi.waitFor(() => expect(document.body.textContent).toContain('Comprobante recibido exitosamente'));
     expect(document.getElementById('comp-input')).toBeNull();
     expect(document.querySelector('.estado-banner')?.className).toContain('revision');
+  });
+
+  it('no escapa dos veces lo que ya escapó al repintar tras la subida', async () => {
+    // `renderPortal` escapa en la frontera, y el repintado vuelve a entrar por
+    // ella. Cuando se le devolvía el participante ya saneado, cada subida con
+    // éxito convertía «Martínez & Co» en «Martínez &amp; Co» en pantalla.
+    const { input, boton } = await prepararFormulario({
+      nombre: 'Martínez & Co',
+      institucion: 'Facultad de Arquitectura & Diseño',
+    });
+    vi.mocked(subirComprobante).mockResolvedValue('Comprobante recibido.');
+    expect(hueco().textContent).toContain('Martínez & Co');
+
+    elegir(input, pdf());
+    boton.dispatchEvent(new MouseEvent('click'));
+
+    await vi.waitFor(() => expect(document.body.textContent).toContain('Comprobante recibido exitosamente'));
+    expect(hueco().textContent).toContain('Martínez & Co');
+    expect(hueco().textContent).toContain('Facultad de Arquitectura & Diseño');
+    expect(hueco().innerHTML).not.toContain('&amp;amp;');
+  });
+
+  it('sigue escapando el nombre después de repintar', async () => {
+    // El arreglo del doble escapado no puede haber abierto la puerta contraria:
+    // lo que se repinta viene sin sanear y tiene que volver a pasar por la
+    // frontera de escapado, no saltársela.
+    const { input, boton } = await prepararFormulario({ nombre: '<img src=x onerror=alert(1)>' });
+    vi.mocked(subirComprobante).mockResolvedValue('Comprobante recibido.');
+
+    elegir(input, pdf());
+    boton.dispatchEvent(new MouseEvent('click'));
+
+    await vi.waitFor(() => expect(document.body.textContent).toContain('Comprobante recibido exitosamente'));
+    expect(hueco().querySelector('img')).toBeNull();
+    expect(hueco().innerHTML).not.toContain('<img src=x');
   });
 
   it('no envía dos veces si se pulsa el botón repetidamente', async () => {

@@ -494,6 +494,21 @@ html, body {
   height: 240px;
 }
 
+/* Respaldo cuando el código QR no se pudo generar en el navegador. Ocupa el
+   sitio del código para que la tarjeta no se quede coja, pero sin fingir que
+   hay una imagen: el ID de participante de al lado es lo que sirve en el acceso. */
+.qr-no-disponible {
+  max-width: 320px;
+  margin: 0;
+  padding: 20px;
+  border: 1px dashed var(--borde-hover);
+  border-radius: var(--radio);
+  color: var(--texto-muted);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+
 /* ── Gafete Virtual (Mockup) ────────────────────────────── */
 .gafete-preview-wrapper {
   display: flex;

@@ -74,7 +74,7 @@ Los siguientes comandos deben ejecutarse desde la terminal situada en el directo
 | `npm run preview` | Verifica de manera local el comportamiento de los archivos compilados |
 | `npm run lint` | ESLint sobre `src/` y `scripts/`, incluidos los `.astro` |
 | `npm run check` | `astro check`: la única comprobación que compila de verdad el TypeScript del navegador |
-| `npm test` | Vitest: 76 pruebas. Las de DOM usan jsdom; el resto no necesita navegador |
+| `npm test` | Vitest: 87 pruebas. Las de DOM usan jsdom; el resto no necesita navegador |
 | `npm run verificar` | Lint, tipos y pruebas seguidos |
 | `npm run verificar:salida` | Comprueba `dist/`: base, scripts en línea y manifiesto |
 
