@@ -1,0 +1,15 @@
+# Finales de línea.
+#
+# Todo el repositorio se guarda en LF, y así es como lo ve la CI en Linux. Sin
+# declararlo aquí, quien decide es el `core.autocrlf` de cada máquina: en Windows
+# el árbol de trabajo queda en CRLF, y entonces `prettier --check` pasaba en local
+# y fallaba en la CI con los veintiún archivos a la vez. Declararlo también
+# evita que las instantáneas de Vitest —que se escriben en LF— aparezcan como
+# modificadas después de cada `npm test`.
+* text=auto eol=lf
+
+# Binarios: que Git no intente normalizar nada dentro.
+*.png binary
+*.ico binary
+*.webp binary
+*.woff2 binary

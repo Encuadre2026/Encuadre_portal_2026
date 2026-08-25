@@ -11,11 +11,12 @@
     "build": "astro build && npm run verificar:salida",
     "preview": "astro preview",
     "lint": "eslint src/ scripts/",
-    "format": "prettier --write \"src/**/*.{ts,astro,css}\" \"scripts/**/*.mjs\"",
+    "format": "prettier --write \"src/**/*.{ts,astro,css}\" \"scripts/**/*.mjs\" \"*.{mjs,ts}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,astro,css}\" \"scripts/**/*.mjs\" \"*.{mjs,ts}\"",
     "test": "vitest run",
     "astro": "astro",
     "check": "astro check",
-    "verificar": "npm run lint && npm run check && npm test",
+    "verificar": "npm run format:check && npm run lint && npm run check && npm test",
     "verificar:salida": "node scripts/verificar-salida.mjs"
   },
   "dependencies": {
@@ -33,6 +34,7 @@
     "globals": "^17.11.0",
     "jsdom": "^30.0.1",
     "prettier": "^3.9.6",
+    "prettier-plugin-astro": "^0.14.1",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.66.0",
     "vitest": "^4.1.10"

@@ -88,7 +88,8 @@ const csp = [
     </noscript>
     <div class="portal-wrapper">
       <slot />
-      {/*
+      {
+        /*
         Contenedor global de alertas (toasts).
 
         `aria-live` no es un adorno: los toasts son el único canal por el que se
@@ -98,19 +99,11 @@ const csp = [
 
         Es `polite` y no `assertive` porque no debe cortar lo que se esté
         leyendo; y `atomic` para que el mensaje se anuncie entero.
-      */}
-      <div
-        class="toast-container"
-        id="toast-container"
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-      </div>
+      */
+      }
+      <div class="toast-container" id="toast-container" role="status" aria-live="polite" aria-atomic="true"></div>
     </div>
-    <div id="offline-banner" class="offline-banner" hidden role="alert">
-      ⚠️ Sin conexión a internet
-    </div>
+    <div id="offline-banner" class="offline-banner" hidden role="alert">⚠️ Sin conexión a internet</div>
     <script>
       // El módulo se importa en vez de escribir la lógica aquí: Astro incrusta
       // en el HTML los scripts pequeños y autocontenidos, y la CSP de arriba

@@ -25,6 +25,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Hasta ahora `npm run format` ni siquiera funcionaba: Prettier no sabía
+      # leer los `.astro` porque faltaba `prettier-plugin-astro`, y dos archivos
+      # ya habían divergido de su propio formato sin que nada se quejara.
+      - name: Formato
+        run: npm run format:check
+
       - name: Lint
         run: npm run lint
 

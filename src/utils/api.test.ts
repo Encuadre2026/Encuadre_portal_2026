@@ -109,7 +109,10 @@ describe('obtenerParticipante', () => {
   });
 
   it('no da por bueno un 200 que no trae participante', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => respuesta(200, { ok: true })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => respuesta(200, { ok: true })),
+    );
 
     const fallo = await obtenerParticipante('https://api', 'abc123').catch((e) => e);
     expect(fallo.codigo).toBe('NO_ENCONTRADO');

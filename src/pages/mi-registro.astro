@@ -7,6 +7,7 @@ import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Spinner from '../components/Spinner.astro';
 ---
+
 <Layout title="Mi Registro — 36 FTD Encuadre 2026" noindex={true}>
   <Header />
   <main class="portal-main" id="portal-main">
@@ -40,14 +41,14 @@ import Spinner from '../components/Spinner.astro';
     if (!token) {
       renderError(
         'Enlace incompleto',
-        'Usa el link que recibiste en tu correo de confirmación. Busca el botón "Ver mi registro" y vuelve a intentarlo.'
+        'Usa el link que recibiste en tu correo de confirmación. Busca el botón "Ver mi registro" y vuelve a intentarlo.',
       );
       return;
     }
     if (!FORMA_DEL_TOKEN.test(token) || token.length > LARGO_MAXIMO_TOKEN) {
       renderError(
         'Enlace no válido',
-        'El formato del enlace no es correcto. Usa el enlace original que recibiste en tu correo de confirmación.'
+        'El formato del enlace no es correcto. Usa el enlace original que recibiste en tu correo de confirmación.',
       );
       return;
     }
@@ -72,7 +73,7 @@ import Spinner from '../components/Spinner.astro';
         renderError(
           'Error de conexión',
           'No pudimos conectarnos al servidor. Por favor intenta de nuevo en unos momentos.',
-          init
+          init,
         );
         return;
       }
