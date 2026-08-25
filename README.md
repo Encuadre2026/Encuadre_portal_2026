@@ -76,7 +76,7 @@ Los siguientes comandos deben ejecutarse desde la terminal situada en el directo
 | `npm run format` | Prettier sobre `src/`, `scripts/` y la configuración de la raíz |
 | `npm run format:check` | Lo mismo sin escribir: falla si algo no está formateado |
 | `npm run check` | `astro check`: la única comprobación que compila de verdad el TypeScript del navegador |
-| `npm test` | Vitest: 87 pruebas. Las de DOM usan jsdom; el resto no necesita navegador |
+| `npm test` | Vitest: 94 pruebas. Las de DOM usan jsdom; el resto no necesita navegador |
 | `npm run verificar` | Formato, lint, tipos y pruebas seguidos |
 | `npm run verificar:salida` | Comprueba `dist/`: base, scripts en línea y manifiesto |
 
@@ -116,6 +116,31 @@ soporte para TS 7 en sus `peerDependencies`. Hasta entonces, subir TypeScript
 cambia dos comprobaciones que funcionan por una versión que no aporta nada al
 portal. Sin esta nota escrita, el aviso de `npm outdated` invita a repetir el
 experimento cada pocos meses.
+
+### Por qué no hay service worker
+
+El portal declara un manifiesto de aplicación web, así que las auditorías tipo
+Lighthouse avisan de que «no registra un service worker». Es deliberado.
+
+El momento en que la falta de red de verdad duele es la entrada al evento, con
+el wifi del recinto saturado. Pero ese caso **ya está cubierto sin service
+worker**: el código QR se descarga como PNG y el gafete se imprime, y ninguna de
+las dos cosas necesita conexión después. Quien guarda su QR llega preparado.
+
+Para aportar algo más, el service worker tendría que cachear la respuesta de la
+API, es decir, **guardar datos personales del registro en el dispositivo**. Eso
+trae dos problemas peores que el que resuelve:
+
+- Una caché desfasada miente. Alguien a quien ya le aprobaron el pago seguiría
+  viendo «Pendiente de comprobante», y un "sin conexión" honesto es mejor que un
+  estado falso.
+- Un service worker sin estrategia de actualización deja a la gente clavada en
+  una versión vieja del portal, que es justo lo que no quieres el día del
+  evento.
+
+**Condición para revisarlo:** que el portal gane contenido que sirva de algo sin
+la API. Mientras todo lo que enseña venga del Worker, un service worker añade
+caché de datos personales y ninguna capacidad nueva.
 
 ### Por qué se comprueba también el sitio compilado
 
