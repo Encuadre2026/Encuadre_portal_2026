@@ -76,7 +76,7 @@ Los siguientes comandos deben ejecutarse desde la terminal situada en el directo
 | `npm run format` | Prettier sobre `src/`, `scripts/` y la configuración de la raíz |
 | `npm run format:check` | Lo mismo sin escribir: falla si algo no está formateado |
 | `npm run check` | `astro check`: la única comprobación que compila de verdad el TypeScript del navegador |
-| `npm test` | Vitest: 87 pruebas. Las de DOM usan jsdom; el resto no necesita navegador |
+| `npm test` | Vitest: 94 pruebas. Las de DOM usan jsdom; el resto no necesita navegador |
 | `npm run verificar` | Formato, lint, tipos y pruebas seguidos |
 | `npm run verificar:salida` | Comprueba `dist/`: base, scripts en línea y manifiesto |
 

@@ -19,6 +19,10 @@
   --texto: #ffffff;
   --texto-suave: #f1f1f1;
   --texto-muted: #8e8e93;
+  /* El mismo papel que `--texto-muted`, pero para el texto que va sobre fondo
+     claro: dentro del gafete. El gris de arriba se apoya en un fondo oscuro y
+     sobre blanco solo da 3,26:1, por debajo del 4,5:1 que pide la WCAG AA. */
+  --texto-muted-sobre-claro: #6e6e73;
   --borde: #2a2a2a;
   --borde-hover: #404040;
   --acento: #e7d818;
@@ -628,7 +632,9 @@ body {
 .gafete-fecha {
   font-size: 8px;
   font-weight: 600;
-  color: #777;
+  /* Era #777, que sobre el negro del gafete da 4,34:1: por debajo del 4,5:1
+     que la WCAG AA exige para texto pequeño, y esto son 8 px. */
+  color: var(--texto-muted);
   text-align: center;
   letter-spacing: 0.05em;
 }
@@ -665,7 +671,9 @@ body {
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #999;
+  /* Era #999 sobre blanco: 2,85:1, el peor del portal después de la nota de
+     subida. El gafete es además lo que se imprime y se lee en la entrada. */
+  color: var(--texto-muted-sobre-claro);
   margin-bottom: 4px;
 }
 
@@ -1382,6 +1390,10 @@ a:focus-visible,
 .upload-nota {
   margin-top: 10px;
   font-size: 11px;
-  color: #555;
+  /* Era #555 sobre el fondo elevado de la tarjeta: 2,33:1, cuando la WCAG AA
+     pide 4,5:1. Es la nota que explica qué hacer si el comprobante no sube, o
+     sea justo el texto que se lee cuando algo va mal. El token que ya usa su
+     hermana `.upload-hint` da 5,34:1. */
+  color: var(--texto-muted);
   text-align: center;
 }
