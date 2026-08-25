@@ -95,6 +95,28 @@ comando terminaba en error; mientras tanto, `portal.css` y `api.test.ts` habían
 ido divergiendo de su propio formato sin que nada lo notara. Ahora el plugin
 está instalado y `format:check` es una puerta más, para que no vuelva a pasar.
 
+### Por qué TypeScript se queda en la 6
+
+`npm outdated` ofrece TypeScript 7, y **no hay que aceptarlo todavía**. Se probó
+en agosto de 2026 y rompe las dos puertas que más valen aquí:
+
+- `astro check` no arranca: «The TypeScript module loaded (found 7.0.2) does not
+  expose the programmatic API that `astro check` relies on». El compilador nativo
+  de la 7 no publica esa API. Seguimiento:
+  <https://github.com/withastro/roadmap/discussions/1321>
+- `eslint` no arranca: «typescript-eslint does not support TS 7.0». Seguimiento:
+  <https://github.com/typescript-eslint/typescript-eslint/issues/10940>
+
+Los dos lo declaran además en sus `peerDependencies`: `@astrojs/check` pide
+`^5.0.0 || ^6.0.0` y `typescript-eslint` pide `>=4.8.4 <6.1.0`, así que la
+instalación solo pasa forzándola con `--legacy-peer-deps`.
+
+**Condición para revisarlo:** que `@astrojs/check` y `typescript-eslint` publiquen
+soporte para TS 7 en sus `peerDependencies`. Hasta entonces, subir TypeScript
+cambia dos comprobaciones que funcionan por una versión que no aporta nada al
+portal. Sin esta nota escrita, el aviso de `npm outdated` invita a repetir el
+experimento cada pocos meses.
+
 ### Por qué se comprueba también el sitio compilado
 
 Hay fallos que ninguna de esas tres puertas puede ver, porque no están en el
