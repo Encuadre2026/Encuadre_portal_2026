@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { escapeHTML, formatFecha, normalizarPerfil } from './portal';
+import { escapeHTML, esFechaValida, formatFecha, normalizarPerfil } from './portal';
 
 // ── escapeHTML ──────────────────────────────────────────────────
 describe('escapeHTML', () => {
@@ -56,6 +56,29 @@ describe('formatFecha', () => {
     const resultado = formatFecha('2026-05-15T08:00:00-06:00');
     expect(resultado).toContain('2026');
     expect(resultado.toLowerCase()).toContain('mayo');
+  });
+});
+
+// ── esFechaValida ───────────────────────────────────────────────
+describe('esFechaValida', () => {
+  it('acepta los formatos que manda la API', () => {
+    expect(esFechaValida('2026-08-20 10:00:00')).toBe(true);
+    expect(esFechaValida('2026-08-20T10:00:00Z')).toBe(true);
+    expect(esFechaValida('2026-08-20T10:00:00-06:00')).toBe(true);
+  });
+
+  it('rechaza lo que no se puede leer como fecha', () => {
+    // Sin esta comprobación, la cuenta atrás pintaba «NaN días : NaN horas :
+    // NaN min : NaN seg» y seguía haciéndolo un tick por segundo, porque
+    // `NaN <= 0` es falso y la rama de «plazo vencido» nunca se tomaba.
+    expect(esFechaValida('fecha rota')).toBe(false);
+    expect(esFechaValida('2026-13-45 99:99:99')).toBe(false);
+  });
+
+  it('rechaza la ausencia de fecha', () => {
+    expect(esFechaValida(undefined)).toBe(false);
+    expect(esFechaValida(null)).toBe(false);
+    expect(esFechaValida('')).toBe(false);
   });
 });
 

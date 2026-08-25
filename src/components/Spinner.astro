@@ -4,8 +4,9 @@ export interface Props {
   texto?: string;
 }
 
-const { texto = "Cargando tu registro..." } = Astro.props;
+const { texto = 'Cargando tu registro...' } = Astro.props;
 ---
+
 <div class="skeleton-wrapper" role="status" aria-busy="true">
   <!-- Skeleton: Banner de estado -->
   <div class="skeleton-banner">

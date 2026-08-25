@@ -1,5 +1,5 @@
 import { ErrorApi, MAX_PDF_BYTES, MAX_PDF_MB, subirComprobante, type Participante } from './api';
-import { escapeHTML, getQrUrl, toast, iniciarCountdown, detenerCountdown } from './portal';
+import { escapeHTML, esFechaValida, getQrUrl, toast, iniciarCountdown, detenerCountdown } from './portal';
 import { archivoElegido, estadoDe, paginaError, vistaAprobado, vistaPendiente } from './plantillas';
 
 // Este módulo compone las plantillas y conecta los eventos. El HTML vive en
@@ -19,6 +19,12 @@ import { archivoElegido, estadoDe, paginaError, vistaAprobado, vistaPendiente } 
 //
 // Si añades un campo de texto a `Participante`, añádelo también aquí. El tipo
 // `CampoDeTexto` de la prueba lo detecta y deja de compilar hasta que lo hagas.
+//
+// **No es idempotente.** Aplicarla dos veces escapa dos veces, y «Martínez & Co»
+// acaba leyéndose «Martínez &amp; Co» en pantalla. Lo que circula por el portal
+// después de esta frontera es texto ya escapado: si algo tiene que volver a
+// entrar por `renderPortal` —el repintado tras subir el comprobante—, lo que se
+// guarda para ello es el participante original, no el saneado.
 export function sanearParticipante(pRaw: Participante): Participante {
   return {
     ...pRaw,
@@ -81,8 +87,13 @@ export async function renderPortal(
     cablearImprimir();
   } else {
     main.innerHTML = vistaPendiente(p, estado, tieneComp);
-    if (!tieneComp && p.fecha_expiracion) iniciarCountdown(p.fecha_expiracion);
-    if (!tieneComp) setupUpload(p, apiBase, baseUrl, tokenPortal);
+    // La fecha no basta con que esté: si no se puede parsear, la cuenta atrás
+    // se llenaba de `NaN` y seguía haciéndolo un tick por segundo.
+    if (!tieneComp && esFechaValida(p.fecha_expiracion)) iniciarCountdown(p.fecha_expiracion);
+    // Se le entrega el participante **sin sanear**: el formulario repinta el
+    // portal al terminar la subida, y ese repintado vuelve a pasar por la
+    // frontera de escapado de aquí arriba.
+    if (!tieneComp) setupUpload(pRaw, apiBase, baseUrl, tokenPortal);
   }
 }
 
@@ -101,7 +112,7 @@ function cablearImprimir(): void {
 
 // ── Controlador de Eventos para Carga de PDF ────────────────────
 // Gestiona el arrastrar, soltar, teclado (a11y), progreso visual y transición sin recarga
-export function setupUpload(p: Participante, apiBase: string, baseUrl: string, tokenPortal: string): void {
+export function setupUpload(pRaw: Participante, apiBase: string, baseUrl: string, tokenPortal: string): void {
   const input = document.getElementById('comp-input') as HTMLInputElement | null;
   const area = document.getElementById('upload-area');
   const infoOpcional = document.getElementById('file-info');
@@ -200,7 +211,9 @@ export function setupUpload(p: Participante, apiBase: string, baseUrl: string, t
       }
 
       setTimeout(async () => {
-        await renderPortal({ ...p, ...cambios }, apiBase, baseUrl, tokenPortal);
+        // Se repinta desde el participante original. Con el saneado, cada
+        // repintado volvía a escapar lo ya escapado.
+        await renderPortal({ ...pRaw, ...cambios }, apiBase, baseUrl, tokenPortal);
         if (main) {
           main.style.opacity = '1';
           // La transición era un estilo inline que se quedaba pegado al

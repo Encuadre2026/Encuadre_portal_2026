@@ -73,9 +73,11 @@ Los siguientes comandos deben ejecutarse desde la terminal situada en el directo
 | `npm run build` | Compila los activos finales en `./dist/` y comprueba la salida |
 | `npm run preview` | Verifica de manera local el comportamiento de los archivos compilados |
 | `npm run lint` | ESLint sobre `src/` y `scripts/`, incluidos los `.astro` |
+| `npm run format` | Prettier sobre `src/`, `scripts/` y la configuración de la raíz |
+| `npm run format:check` | Lo mismo sin escribir: falla si algo no está formateado |
 | `npm run check` | `astro check`: la única comprobación que compila de verdad el TypeScript del navegador |
-| `npm test` | Vitest: 76 pruebas. Las de DOM usan jsdom; el resto no necesita navegador |
-| `npm run verificar` | Lint, tipos y pruebas seguidos |
+| `npm test` | Vitest: 87 pruebas. Las de DOM usan jsdom; el resto no necesita navegador |
+| `npm run verificar` | Formato, lint, tipos y pruebas seguidos |
 | `npm run verificar:salida` | Comprueba `dist/`: base, scripts en línea y manifiesto |
 
 ### Verificación antes de publicar
@@ -86,6 +88,12 @@ como puerta antes de desplegar: si falla, no se publica.
 Hasta agosto de 2026 el workflow solo compilaba. El linter y las pruebas ya
 existían y **no los ejecutaba nadie**; `astro check` ni siquiera estaba
 instalado, y en su primera pasada encontró cuatro errores de tipos.
+
+El formato entró por el mismo camino. `npm run format` estaba roto de fábrica:
+faltaba `prettier-plugin-astro`, así que Prettier no sabía leer los `.astro` y el
+comando terminaba en error; mientras tanto, `portal.css` y `api.test.ts` habían
+ido divergiendo de su propio formato sin que nada lo notara. Ahora el plugin
+está instalado y `format:check` es una puerta más, para que no vuelva a pasar.
 
 ### Por qué se comprueba también el sitio compilado
 

@@ -61,6 +61,21 @@ const csp = [
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Security-Policy" content={csp} />
+    {
+      /*
+      El token del registro viaja en la URL (`?id=…`), así que la dirección
+      completa de esta página **es** la credencial. La cabecera `Referer` es
+      justo la vía por la que una dirección se filtra sin que nadie la haya
+      compartido.
+
+      Los navegadores actuales ya traen `strict-origin-when-cross-origin` por
+      defecto, que no manda la ruta ni la consulta fuera del sitio, pero eso es
+      una garantía del navegador y no del portal. Con `no-referrer` no se
+      envía la cabecera en ninguna petición, y no se pierde nada: el Worker
+      reconoce a quien llama por `Origin`, que esto no toca.
+    */
+    }
+    <meta name="referrer" content="no-referrer" />
     <title>{title}</title>
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex, nofollow" />}
@@ -88,7 +103,8 @@ const csp = [
     </noscript>
     <div class="portal-wrapper">
       <slot />
-      {/*
+      {
+        /*
         Contenedor global de alertas (toasts).
 
         `aria-live` no es un adorno: los toasts son el único canal por el que se
@@ -98,19 +114,11 @@ const csp = [
 
         Es `polite` y no `assertive` porque no debe cortar lo que se esté
         leyendo; y `atomic` para que el mensaje se anuncie entero.
-      */}
-      <div
-        class="toast-container"
-        id="toast-container"
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-      </div>
+      */
+      }
+      <div class="toast-container" id="toast-container" role="status" aria-live="polite" aria-atomic="true"></div>
     </div>
-    <div id="offline-banner" class="offline-banner" hidden role="alert">
-      ⚠️ Sin conexión a internet
-    </div>
+    <div id="offline-banner" class="offline-banner" hidden role="alert">⚠️ Sin conexión a internet</div>
     <script>
       // El módulo se importa en vez de escribir la lógica aquí: Astro incrusta
       // en el HTML los scripts pequeños y autocontenidos, y la CSP de arriba

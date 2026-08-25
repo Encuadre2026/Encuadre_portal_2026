@@ -99,6 +99,15 @@ describe('vistas completas', () => {
     expect(vistaPendiente(sinFecha, estadoDe(false, false), false)).not.toContain('countdown-wrapper');
   });
 
+  it('con una fecha de expiración ilegible tampoco', () => {
+    // No basta con que la fecha esté: si no se puede parsear, lo que salía era
+    // el rótulo «Tiempo restante» encima de un contador de `NaN`.
+    const fechaRota = { ...P, fecha_expiracion: 'no-es-una-fecha' };
+    const html = vistaPendiente(fechaRota, estadoDe(false, false), false);
+    expect(html).not.toContain('countdown-wrapper');
+    expect(html).not.toContain('cd-inner');
+  });
+
   it('quien ya envió comprobante no ve el formulario de subida', () => {
     const html = vistaPendiente(P, estadoDe(false, true), true);
     expect(html).not.toContain('id="comp-input"');
@@ -119,6 +128,36 @@ describe('plantillas sueltas', () => {
 
   it('el formulario anuncia el mismo límite que se aplica', () => {
     expect(formularioComprobante()).toContain('Máximo 5 MB');
+  });
+});
+
+// ── QR que no se pudo generar ───────────────────────────────────
+describe('cuando el código QR no se pudo generar', () => {
+  // `getQrUrl` devuelve una cadena vacía si la biblioteca falla. Un `src=""` no
+  // es un hueco: el navegador lo resuelve contra la URL actual, así que pedía
+  // otra vez la propia página —con el token dentro— para pintarla como imagen,
+  // y el enlace de descarga bajaba ese HTML renombrado a `.png`.
+  const sinQr = () => vistaAprobado(P, estadoDe(true, false), '', '/base');
+
+  it('no deja ningún src ni href vacío', () => {
+    expect(sinQr()).not.toContain('src=""');
+    expect(sinQr()).not.toContain('href=""');
+  });
+
+  it('explica qué pasó y deja a la vista el ID, que es lo que sirve en el acceso', () => {
+    expect(sinQr()).toContain('qr-no-disponible');
+    expect(sinQr()).toContain('ENC-042');
+  });
+
+  it('no ofrece descargar algo que no existe', () => {
+    expect(sinQr()).not.toContain('download=');
+  });
+
+  it('con código sí lo pinta y lo ofrece', () => {
+    const html = vistaAprobado(P, estadoDe(true, false), 'data:image/png;base64,AAAA', '/base');
+    expect(html).toContain('download="QR_ENC-042.png"');
+    // Uno en la tarjeta y otro en el gafete: el mismo dibujo, generado una vez.
+    expect(html.split('data:image/png;base64,AAAA')).toHaveLength(4); // tres apariciones
   });
 });
 

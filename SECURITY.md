@@ -33,6 +33,12 @@ documenta en el propio código para que no se revierta.
   Ya cubre los `.astro` (`eslint-plugin-astro`).
 - Las páginas del portal se sirven con `noindex, nofollow` (`src/layouts/Layout.astro`),
   para que un enlace compartido por descuido no acabe indexado.
+- La página no envía cabecera `Referer` en ninguna petición
+  (`<meta name="referrer" content="no-referrer">` en `src/layouts/Layout.astro`).
+  Como el token va en la URL, la dirección completa es la credencial, y esa
+  cabecera es la vía por la que una dirección se filtra sin que nadie la haya
+  compartido. Los navegadores actuales tampoco la filtrarían fuera del sitio con
+  su valor por defecto, pero eso es una garantía del navegador, no del portal.
 - Quien tenga el enlace ve el registro. No hay contraseña: el enlace se envía
   por correo a la dirección registrada y no debe reenviarse.
 

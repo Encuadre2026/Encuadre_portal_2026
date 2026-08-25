@@ -52,6 +52,22 @@ function parsearFechaAPI(iso: string): Date {
   return new Date(normalizada + 'Z');
 }
 
+/**
+ * ¿Es una fecha que el portal pueda usar?
+ *
+ * Hace falta porque `fecha_expiracion` alimenta la cuenta atrás, y una fecha
+ * ilegible no da un error: da `NaN`. La resta contra `Date.now()` también es
+ * `NaN`, `NaN <= 0` es falso, y lo que se pintaba era «NaN días : NaN horas :
+ * NaN min : NaN seg», una vez por segundo y para siempre.
+ *
+ * Devuelve un predicado de tipo para que quien la use se quede además con la
+ * fecha ya estrechada a `string`.
+ */
+export function esFechaValida(iso?: string | null): iso is string {
+  if (!iso) return false;
+  return !Number.isNaN(parsearFechaAPI(iso).getTime());
+}
+
 // Formatea fechas ISO a español mexicano legible (ej. lunes, 25 de mayo de 2026)
 export function formatFecha(iso?: string): string {
   if (!iso) return '—';
@@ -133,6 +149,11 @@ export function iniciarCountdown(fechaSQL: string): void {
 
   const destino = el;
   const vence = parsearFechaAPI(fechaSQL).getTime();
+
+  // Segunda barrera. Quien llama ya decide con `esFechaValida` si pintar la
+  // cuenta atrás; si aun así entrara una fecha ilegible, lo que procede es no
+  // pintar nada, y no un contador de `NaN` con su intervalo vivo detrás.
+  if (Number.isNaN(vence)) return;
 
   // La estructura se construye una sola vez y después solo cambian los cuatro
   // números. Antes se rehacían doce elementos por segundo con `innerHTML`.

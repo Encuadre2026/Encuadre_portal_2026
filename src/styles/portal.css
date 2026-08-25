@@ -52,13 +52,16 @@
 }
 
 /* Reset base */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-html, body {
+html,
+body {
   background: radial-gradient(circle at 15% 0%, #202020 0%, #151515 40%, #121212 100%);
   color: var(--texto);
   font-family: Montserrat, system-ui, sans-serif;
@@ -193,9 +196,18 @@ html, body {
   border: 1px solid transparent;
 }
 
-.estado-banner.pendiente  { border-color: var(--estado-pendiente); background: var(--estado-pendiente-bg); }
-.estado-banner.revision   { border-color: var(--estado-revision);  background: var(--estado-revision-bg); }
-.estado-banner.aprobado   { border-color: var(--estado-aprobado);  background: var(--estado-aprobado-bg); }
+.estado-banner.pendiente {
+  border-color: var(--estado-pendiente);
+  background: var(--estado-pendiente-bg);
+}
+.estado-banner.revision {
+  border-color: var(--estado-revision);
+  background: var(--estado-revision-bg);
+}
+.estado-banner.aprobado {
+  border-color: var(--estado-aprobado);
+  background: var(--estado-aprobado-bg);
+}
 
 .estado-indicador {
   width: 14px;
@@ -214,13 +226,28 @@ html, body {
   animation: pulse 2s infinite;
 }
 
-.pendiente  .estado-indicador { color: var(--estado-pendiente); background: var(--estado-pendiente); }
-.revision   .estado-indicador { color: var(--estado-revision);  background: var(--estado-revision); }
-.aprobado   .estado-indicador { color: var(--estado-aprobado);  background: var(--estado-aprobado); }
+.pendiente .estado-indicador {
+  color: var(--estado-pendiente);
+  background: var(--estado-pendiente);
+}
+.revision .estado-indicador {
+  color: var(--estado-revision);
+  background: var(--estado-revision);
+}
+.aprobado .estado-indicador {
+  color: var(--estado-aprobado);
+  background: var(--estado-aprobado);
+}
 
 @keyframes pulse {
-  0% { transform: scale(1); opacity: 0.5; }
-  100% { transform: scale(2.2); opacity: 0; }
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
 }
 
 .estado-titulo {
@@ -230,9 +257,15 @@ html, body {
   text-transform: uppercase;
   margin-bottom: 6px;
 }
-.pendiente .estado-titulo { color: var(--estado-pendiente); }
-.revision  .estado-titulo { color: var(--estado-revision); }
-.aprobado  .estado-titulo { color: var(--estado-aprobado); }
+.pendiente .estado-titulo {
+  color: var(--estado-pendiente);
+}
+.revision .estado-titulo {
+  color: var(--estado-revision);
+}
+.aprobado .estado-titulo {
+  color: var(--estado-aprobado);
+}
 
 .estado-desc {
   font-size: 13px;
@@ -276,7 +309,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
   font-family: monospace;
 }
 
@@ -357,11 +390,21 @@ html, body {
 
    La regla genérica va primero a propósito: todos estos selectores tienen la
    misma especificidad, así que lo que decide es el orden. */
-[data-perfil]                { --perfil-actual: var(--perfil-generico); }
-[data-perfil="estudiante"]   { --perfil-actual: var(--perfil-estudiante); }
-[data-perfil="profesor"]     { --perfil-actual: var(--perfil-profesor); }
-[data-perfil="profesional"]  { --perfil-actual: var(--perfil-profesional); }
-[data-perfil="investigador"] { --perfil-actual: var(--perfil-investigador); }
+[data-perfil] {
+  --perfil-actual: var(--perfil-generico);
+}
+[data-perfil='estudiante'] {
+  --perfil-actual: var(--perfil-estudiante);
+}
+[data-perfil='profesor'] {
+  --perfil-actual: var(--perfil-profesor);
+}
+[data-perfil='profesional'] {
+  --perfil-actual: var(--perfil-profesional);
+}
+[data-perfil='investigador'] {
+  --perfil-actual: var(--perfil-investigador);
+}
 
 .perfil-badge {
   color: var(--perfil-actual);
@@ -494,6 +537,21 @@ html, body {
   height: 240px;
 }
 
+/* Respaldo cuando el código QR no se pudo generar en el navegador. Ocupa el
+   sitio del código para que la tarjeta no se quede coja, pero sin fingir que
+   hay una imagen: el ID de participante de al lado es lo que sirve en el acceso. */
+.qr-no-disponible {
+  max-width: 320px;
+  margin: 0;
+  padding: 20px;
+  border: 1px dashed var(--borde-hover);
+  border-radius: var(--radio);
+  color: var(--texto-muted);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+
 /* ── Gafete Virtual (Mockup) ────────────────────────────── */
 .gafete-preview-wrapper {
   display: flex;
@@ -532,8 +590,10 @@ html, body {
   height: 12px;
   background: var(--fondo);
   border-radius: 10px;
-  box-shadow: inset 0 3px 6px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.1);
-  border: 1px solid rgba(0,0,0,0.5);
+  box-shadow:
+    inset 0 3px 6px rgba(0, 0, 0, 0.8),
+    0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.5);
 }
 
 .gafete:hover {
@@ -695,7 +755,9 @@ html, body {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ── Envolvente del countdown (pendiente sin comprobante) ─── */
@@ -824,13 +886,25 @@ html, body {
   max-width: 360px;
 }
 
-.toast.success { border-left: 3px solid var(--estado-aprobado); }
-.toast.error   { border-left: 3px solid #ef4444; }
-.toast.info    { border-left: 3px solid var(--estado-revision); }
+.toast.success {
+  border-left: 3px solid var(--estado-aprobado);
+}
+.toast.error {
+  border-left: 3px solid #ef4444;
+}
+.toast.info {
+  border-left: 3px solid var(--estado-revision);
+}
 
 @keyframes toastEntrada {
-  from { opacity: 0; transform: translateX(20px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* ── Impresión Precisa ─────────────────────────────────────── */
@@ -852,9 +926,9 @@ html, body {
   #goog-gt-tt,
   .skiptranslate,
   .goog-te-banner-frame,
-  [id^="google_translate"],
-  [id^="translator-"],
-  [class^="translator-"],
+  [id^='google_translate'],
+  [id^='translator-'],
+  [class^='translator-'],
   #edge-translate-panel,
   edge-translate-extension {
     display: none !important;
@@ -873,7 +947,9 @@ html, body {
     display: block !important;
   }
 
-  body, html, .portal-wrapper {
+  body,
+  html,
+  .portal-wrapper {
     background: #ffffff !important;
   }
 
@@ -1074,7 +1150,9 @@ html, body {
 
 /* ── Accesibilidad ──────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -1089,7 +1167,7 @@ html, body {
 
 button:focus-visible,
 a:focus-visible,
-[role="button"]:focus-visible {
+[role='button']:focus-visible {
   outline: 2px solid var(--acento);
   outline-offset: 2px;
   border-radius: var(--radio-sm);
@@ -1180,8 +1258,12 @@ a:focus-visible,
 
 /* ── Skeleton Loading ───────────────────────────────────────── */
 @keyframes skeleton-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .skeleton-wrapper {
