@@ -26,6 +26,20 @@ export const BASE = '/';
  */
 export const RAIZ = BASE.replace(/\/$/, '');
 
+/**
+ * El dominio del sitio.
+ *
+ * Ojo: esto NO configura el dominio en GitHub Pages. Solo le dice a Astro qué
+ * poner en las URL canónicas y en las etiquetas Open Graph.
+ *
+ * El dominio personalizado vive en Settings → Pages del repositorio, y ésa es
+ * la única vía en un despliegue por workflow. Se probó a meter un archivo
+ * `public/CNAME` en el artefacto, que es lo que funciona cuando Pages sirve
+ * directamente de una rama: GitHub lo sirvió como un archivo más y dejó la
+ * configuración de Pages intacta. El resultado fue un sitio compilado para la
+ * raíz pero servido bajo la ruta vieja, con el HTML respondiendo 200 y todos
+ * sus recursos 404.
+ */
 export default defineConfig({
   site: 'https://portal.futurologiaencuadre-2026.com',
   base: BASE,
