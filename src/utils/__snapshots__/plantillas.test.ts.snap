@@ -217,7 +217,7 @@ exports[`vistas completas > la de pago aprobado mantiene su forma 1`] = `
             <div class="gafete" data-perfil="estudiante">
               <div class="gafete-lanyard"><div class="gafete-hole"></div></div>
               <div class="gafete-top">
-                <img class="gafete-logo" src="/logo_futurologia_encuadre.webp" alt="Encuadre 2026" />
+                <img class="gafete-logo" src="/Encuadre_portal_2026/logo_futurologia_encuadre.webp" alt="Encuadre 2026" />
                 <div class="gafete-evento">36 FTD &middot; Futurología &middot; Encuadre</div>
                 <div class="gafete-fecha">29, 30 y 31 de octubre de 2026 &middot; Aguascalientes</div>
               </div>
