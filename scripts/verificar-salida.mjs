@@ -15,7 +15,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 // La base se lee de la configuración, no se repite aquí: si se repitiera,
 // esta comprobación aprobaría precisamente el error que busca.
-import { RAIZ as base } from '../astro.config.mjs';
+import { BASE as base } from '../astro.config.mjs';
 
 const DIST = 'dist';
 const fallos = [];

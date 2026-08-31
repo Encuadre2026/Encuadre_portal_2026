@@ -21,11 +21,7 @@ import Spinner from '../components/Spinner.astro';
 
   // Configuración de endpoint para consulta de registros
   const API_BASE = import.meta.env.PUBLIC_API_BASE || 'https://encuadre-2026-api.sitio-392.workers.dev';
-  // Se recorta la barra final igual que en Layout, Header, 404 y el
-  // manifiesto: `gafete()` concatena `${baseUrl}/logo…`, y en la raíz del
-  // dominio `BASE_URL` vale `/`, así que sin recortar saldría `//logo…` —una
-  // URL sin protocolo, que el navegador va a buscar a otro dominio—.
-  const BASE_URL = (import.meta.env.BASE_URL || '').replace(/\/$/, '');
+  const BASE_URL = import.meta.env.BASE_URL || '';
 
   // Forma del token del registro. Se valida antes de tocar la red para no
   // mandar al Worker cualquier cosa que venga en la URL; está documentado en
