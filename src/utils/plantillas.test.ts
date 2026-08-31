@@ -83,7 +83,10 @@ describe('tarjetaDatos', () => {
 // ── Vistas completas ────────────────────────────────────────────
 describe('vistas completas', () => {
   it('la de pago aprobado mantiene su forma', () => {
-    expect(vistaAprobado(P, estadoDe(true, true), '[QR]', '/Encuadre_portal_2026')).toMatchSnapshot();
+    // Cadena vacía: es lo que vale la base cuando el portal se sirve en la raíz
+    // de su dominio, y es el caso que puede generar `//logo…` si alguien
+    // deshace la normalización.
+    expect(vistaAprobado(P, estadoDe(true, true), '[QR]', '')).toMatchSnapshot();
   });
 
   it('la de comprobante pendiente mantiene su forma', () => {
