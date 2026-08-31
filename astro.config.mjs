@@ -2,21 +2,35 @@
 import { defineConfig } from 'astro/config';
 
 /**
- * Ruta base del sitio dentro de GitHub Pages.
+ * Ruta base del sitio.
+ *
+ * El portal vive en la raíz de su propio dominio, así que la base es `/`.
  *
  * Se declara una sola vez porque `base` no se aplica sola a todas partes:
  * Astro la antepone a la clave de un `redirect`, pero **no a su destino**. Con
- * el destino escrito a pelo, `/Encuadre_portal_2026/` mandaba el navegador a
- * `/mi-registro` —fuera del sitio— y el visitante acababa en el 404 de GitHub,
- * no en el del portal.
+ * el destino escrito a pelo, la raíz mandaba el navegador fuera del sitio y el
+ * visitante acababa en el 404 de GitHub, no en el del portal.
  */
-export const BASE = '/Encuadre_portal_2026';
+export const BASE = '/';
+
+/**
+ * La misma base sin la barra final: cadena vacía cuando el sitio vive en la
+ * raíz del dominio, como ahora.
+ *
+ * Es la forma que hay que usar para construir rutas, y no `BASE`, porque todo
+ * lo que la concatena le añade una ruta que ya empieza por `/`. Con `BASE` a
+ * secas saldría `//mi-registro`, y eso el navegador no lo lee como una ruta de
+ * este sitio, sino como el dominio `mi-registro` con el protocolo heredado. Es
+ * el mismo criterio que ya seguían las plantillas al normalizar
+ * `import.meta.env.BASE_URL`.
+ */
+export const RAIZ = BASE.replace(/\/$/, '');
 
 export default defineConfig({
-  site: 'https://Encuadre2026.github.io',
+  site: 'https://portal.futurologiaencuadre-2026.com',
   base: BASE,
   redirects: {
-    '/': `${BASE}/mi-registro`,
+    '/': `${RAIZ}/mi-registro`,
   },
   vite: {
     build: {
