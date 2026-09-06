@@ -100,6 +100,13 @@ describe('taller de la asamblea', () => {
     expect(html).toContain('No aplica');
   });
 
+  // El campo llega por la red: un valor que no sea 0 o 1 no puede acabar
+  // escondiéndole la cola de cobro a quien sí tiene que pagar.
+  it('un requiere_pago ausente o nulo se trata como que sí paga', () => {
+    expect(tarjetaDatos({ ...ASAMBLEA, requiere_pago: undefined })).toContain('Taller asignado');
+    expect(tarjetaDatos({ ...ASAMBLEA, requiere_pago: null as unknown as number })).toContain('Taller asignado');
+  });
+
   it('a los demás perfiles les sigue enseñando su taller asignado', () => {
     const html = tarjetaDatos(P);
     expect(html).toContain('Taller asignado');
