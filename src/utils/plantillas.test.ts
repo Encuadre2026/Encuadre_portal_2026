@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   bannerEstado,
   estadoDe,
+  vistaSinAsistencia,
   formularioComprobante,
   paginaError,
   tarjetaDatos,
@@ -49,6 +50,75 @@ describe('estadoDe', () => {
     const clases = [estadoDe(true, true), estadoDe(false, true), estadoDe(false, false)];
     const titulos = clases.map((e) => e.titulo);
     expect(new Set(titulos).size).toBe(3);
+  });
+
+  // La asamblea de ENCUADRE llega siempre con `pago_aprobado = 1` porque no
+  // debe nada, y anunciarle «Pago aprobado» le cuenta un pago que nunca hizo.
+  it('un registro sin cuota no dice que se le aprobó un pago', () => {
+    const estado = estadoDe(true, false, { requierePago: false });
+    expect(estado.clase).toBe('aprobado');
+    expect(estado.titulo).toBe('Registro confirmado');
+    expect(estado.desc).toContain('no hay nada que pagar');
+  });
+
+  it('a quien no asiste no se le habla de gafete', () => {
+    const estado = estadoDe(true, false, { requierePago: false, asiste: false });
+    expect(estado.desc).toContain('no asistirás');
+    expect(estado.desc).not.toContain('gafete');
+  });
+
+  it('sin opciones se comporta igual que antes', () => {
+    expect(estadoDe(true, false)).toEqual(estadoDe(true, false, {}));
+    expect(estadoDe(true, false).titulo).toBe('Pago Aprobado');
+  });
+});
+
+// ── Registros de la asamblea ────────────────────────────────────
+describe('taller de la asamblea', () => {
+  const ASAMBLEA: Participante = {
+    ...P,
+    perfil: 'Asambleísta Encuadre',
+    taller: 'Sin taller · Asamblea',
+    pago_aprobado: 1,
+    requiere_pago: 0,
+    asiste_encuentro: 1,
+  };
+
+  // `taller` trae la fila centinela del Worker, que existe solo porque esa
+  // columna no admite nulos. Enseñarla como «Taller asignado» diría dos cosas
+  // falsas: que hay taller y que está inscrito en él.
+  it('no enseña el taller centinela del Worker', () => {
+    const html = tarjetaDatos({ ...ASAMBLEA, taller_preferencia: 'Futurología aplicada al diseño' });
+    expect(html).not.toContain('Sin taller');
+    expect(html).toContain('Taller de tu interés');
+    expect(html).toContain('Futurología aplicada al diseño');
+  });
+
+  it('sin taller elegido dice «No aplica», no el centinela', () => {
+    const html = tarjetaDatos({ ...ASAMBLEA, taller_preferencia: null });
+    expect(html).not.toContain('Sin taller');
+    expect(html).toContain('No aplica');
+  });
+
+  it('a los demás perfiles les sigue enseñando su taller asignado', () => {
+    const html = tarjetaDatos(P);
+    expect(html).toContain('Taller asignado');
+    expect(html).toContain('Futurología aplicada al diseño');
+  });
+
+  it('quien no asiste no recibe QR ni gafete', () => {
+    const estado = estadoDe(true, false, { requierePago: false, asiste: false });
+    const html = vistaSinAsistencia({ ...ASAMBLEA, asiste_encuentro: 0 }, estado);
+    expect(html).not.toContain('qr-img');
+    expect(html).not.toContain('gafete');
+    expect(html).toContain('Datos de tu registro');
+  });
+
+  it('la vista de la asamblea mantiene su forma', () => {
+    const estado = estadoDe(true, false, { requierePago: false });
+    expect(
+      vistaAprobado({ ...ASAMBLEA, taller_preferencia: 'Futurología aplicada al diseño' }, estado, '[QR]', ''),
+    ).toMatchSnapshot();
   });
 });
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { sanearParticipante } from './vistas';
-import { tarjetaDatos, vistaAprobado, vistaPendiente, estadoDe } from './plantillas';
+import { tarjetaDatos, vistaAprobado, vistaPendiente, vistaSinAsistencia, estadoDe } from './plantillas';
 import type { Participante } from './api';
 
 /**
@@ -23,8 +23,14 @@ import type { Participante } from './api';
 
 // Todas las claves de `Participante` cuyo valor es una cadena. Las de tipo
 // número o booleano no pueden inyectar nada y quedan fuera automáticamente.
+//
+// Se quita antes `null` y `undefined` con `NonNullable`. Sin eso, un campo
+// declarado `string | null` —como `taller_preferencia`, que el Worker manda
+// vacío para quien no es de la asamblea— no casaba con `string | undefined` y
+// se quedaba fuera de la comprobación sin que nadie lo notara: justo el
+// descuido silencioso que esta prueba existe para impedir.
 type CampoDeTexto = {
-  [K in keyof Participante]-?: Participante[K] extends string | undefined ? K : never;
+  [K in keyof Participante]-?: NonNullable<Participante[K]> extends string ? K : never;
 }[keyof Participante];
 
 // Cierra la etiqueta y el atributo en curso antes de abrir la suya, que es lo
@@ -40,6 +46,7 @@ const CARGAS: Record<CampoDeTexto, string> = {
   institucion: CARGA,
   fecha_registro: CARGA,
   fecha_expiracion: CARGA,
+  taller_preferencia: CARGA,
 };
 
 const BASE: Participante = {
@@ -56,15 +63,25 @@ const BASE: Participante = {
 
 const campos = Object.keys(CARGAS) as CampoDeTexto[];
 
-// Pinta el participante por los tres caminos que existen hacia `innerHTML`, de
+// Pinta el participante por todos los caminos que existen hacia `innerHTML`, de
 // modo que la prueba no dependa de cuál de ellos toque el campo.
+//
+// Se pinta dos veces: como registro normal y como registro de asamblea. La
+// segunda hace falta porque `taller_preferencia` solo se enseña cuando
+// `requiere_pago` es 0; sin esa pasada, una inyección en ese campo no llegaba
+// nunca al HTML y la prueba habría pasado sin comprobar nada.
 function todoElHtml(p: Participante): string {
   const estado = estadoDe(false, false);
+  const asamblea = { ...p, requiere_pago: 0 };
+  const estadoAsamblea = estadoDe(true, false, { requierePago: false });
   return [
     tarjetaDatos(p),
     vistaPendiente(p, estado, false),
     vistaPendiente(p, estado, true),
     vistaAprobado(p, estadoDe(true, true), '', ''),
+    tarjetaDatos(asamblea),
+    vistaAprobado(asamblea, estadoAsamblea, '', ''),
+    vistaSinAsistencia(asamblea, estadoAsamblea),
   ].join('\n');
 }
 
@@ -77,6 +94,20 @@ describe('frontera de escapado', () => {
     // sino que no quede un `<img` que el navegador ejecute.
     expect(html).not.toContain('<img src=x');
     expect(html).not.toContain('onerror="alert(1)"');
+  });
+
+  it('escapa también el taller que prefiere la asamblea', () => {
+    const p = sanearParticipante({ ...BASE, requiere_pago: 0, taller_preferencia: '<b>x</b>' });
+    expect(p.taller_preferencia).toBe('&lt;b&gt;x&lt;/b&gt;');
+    expect(tarjetaDatos(p)).toContain('&lt;b&gt;x&lt;/b&gt;');
+  });
+
+  // «No se le preguntó» y «contestó algo» tienen que seguir siendo
+  // distinguibles después de sanear: de esa diferencia depende el rótulo que
+  // se enseña, y convertir el hueco en cadena vacía lo borraría.
+  it('deja intacto el «sin respuesta» del taller de interés', () => {
+    expect(sanearParticipante({ ...BASE }).taller_preferencia).toBeUndefined();
+    expect(sanearParticipante({ ...BASE, taller_preferencia: null }).taller_preferencia).toBeNull();
   });
 
   it('escapa los cinco campos que se pintan en crudo', () => {

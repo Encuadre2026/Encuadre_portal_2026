@@ -25,6 +25,29 @@ export interface Participante {
   fecha_expiracion?: string;
   pago_aprobado: number | boolean;
   tiene_comprobante: number | boolean;
+  /**
+   * ¿Este registro lleva cuota?
+   *
+   * `0` en la asamblea de ENCUADRE, que se registra sin pagar. Sin este campo,
+   * el portal solo veía `pago_aprobado: 1` y lo enseñaba como «Pago aprobado»,
+   * que dice algo que no ocurrió: no es lo mismo «ya pagó» que «no tiene que
+   * pagar».
+   *
+   * Es opcional porque el Worker lo emite desde septiembre de 2026: si faltara
+   * —una respuesta cacheada, un despliegue a medias—, lo que procede es tratar
+   * el registro como los de siempre, que es la mayoría.
+   */
+  requiere_pago?: number | boolean;
+  /**
+   * El taller que la asamblea dijo preferir, si contestó alguno.
+   *
+   * Es una preferencia y no una inscripción: no ocupa cupo. Viaja aparte de
+   * `taller`, que en esos registros trae la fila centinela del Worker
+   * («Sin taller · Asamblea»).
+   */
+  taller_preferencia?: string | null;
+  /** Solo la asamblea: `1` si dijo que asistirá al Encuentro. */
+  asiste_encuentro?: number | boolean | null;
 }
 
 /**
