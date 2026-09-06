@@ -88,7 +88,11 @@ export function bannerEstado(estado: EstadoPortal): string {
  * que es lo que vale para todos los demás perfiles.
  */
 export function esSinCuota(p: Participante): boolean {
-  return p.requiere_pago !== undefined && !p.requiere_pago;
+  // Se descarta `null` además de `undefined`: el campo llega por la red, donde
+  // el tipo no obliga a nada, y un `null` significa «no sé», no «no paga».
+  // Confundirlos escondería la cola de cobro de alguien que sí debe pagar.
+  if (p.requiere_pago === undefined || p.requiere_pago === null) return false;
+  return !p.requiere_pago;
 }
 
 /** ¿Dijo que asistirá? Sin respuesta —el resto de perfiles— se asume que sí. */
