@@ -92,7 +92,7 @@ export function formatFecha(iso?: string): string {
  * que sale de aquí es una etiqueta de un conjunto cerrado, así que también deja
  * de ser posible que el texto del servidor acabe dentro de un atributo.
  */
-const PERFILES = ['estudiante', 'profesor', 'profesional', 'investigador'] as const;
+const PERFILES = ['estudiante', 'profesor', 'profesional', 'investigador', 'asambleista'] as const;
 
 export type Perfil = (typeof PERFILES)[number] | 'generico';
 
@@ -110,7 +110,12 @@ export function normalizarPerfil(perfil: string | null | undefined): Perfil {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
-  return (PERFILES as readonly string[]).includes(limpio) ? (limpio as Perfil) : 'generico';
+  // Se compara la PRIMERA palabra y no la cadena entera porque los perfiles
+  // dejaron de ser de una sola: «Asambleísta Encuadre» no casaba con ninguna
+  // etiqueta y perdía su color en silencio, que es justo el fallo que esta
+  // función existe para evitar.
+  const primera = limpio.split(/\s+/)[0];
+  return (PERFILES as readonly string[]).includes(primera) ? (primera as Perfil) : 'generico';
 }
 
 // ── Temporizador (Cuenta Regresiva) ─────────────────────────────

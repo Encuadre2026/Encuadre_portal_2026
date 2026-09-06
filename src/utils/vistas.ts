@@ -1,6 +1,15 @@
 import { ErrorApi, MAX_PDF_BYTES, MAX_PDF_MB, subirComprobante, type Participante } from './api';
 import { escapeHTML, esFechaValida, getQrUrl, toast, iniciarCountdown, detenerCountdown } from './portal';
-import { archivoElegido, estadoDe, paginaError, vistaAprobado, vistaPendiente } from './plantillas';
+import {
+  archivoElegido,
+  asisteAlEncuentro,
+  esSinCuota,
+  estadoDe,
+  paginaError,
+  vistaAprobado,
+  vistaPendiente,
+  vistaSinAsistencia,
+} from './plantillas';
 
 // Este módulo compone las plantillas y conecta los eventos. El HTML vive en
 // `plantillas.ts`, que son funciones puras y por tanto comprobables sin
@@ -33,6 +42,10 @@ export function sanearParticipante(pRaw: Participante): Participante {
     perfil: escapeHTML(pRaw.perfil || 'General'),
     taller: escapeHTML(pRaw.taller || 'Por asignar'),
     institucion: escapeHTML(pRaw.institucion || 'No especificada'),
+    // Se conserva el «no hay respuesta» tal cual —`null` o ausente— en lugar de
+    // convertirlo en cadena vacía: `tallerDe` distingue entre «prefiere este
+    // taller» y «no se le preguntó», y esa diferencia decide el rótulo.
+    taller_preferencia: pRaw.taller_preferencia ? escapeHTML(pRaw.taller_preferencia) : pRaw.taller_preferencia,
     // `fecha_registro` y `fecha_expiracion` no se escapan porque no se pintan
     // en crudo: la primera pasa siempre por `formatFecha`, que devuelve lo que
     // produce `toLocaleDateString` —texto de fecha o «Invalid Date», nunca la
@@ -76,7 +89,17 @@ export async function renderPortal(
 
   const aprobado = p.pago_aprobado == 1 || p.pago_aprobado === true;
   const tieneComp = p.tiene_comprobante == 1 || p.tiene_comprobante === true;
-  const estado = estadoDe(aprobado, tieneComp);
+  const requierePago = !esSinCuota(p);
+  const asiste = asisteAlEncuentro(p);
+  const estado = estadoDe(aprobado, tieneComp, { requierePago, asiste });
+
+  // Quien dijo que no asiste no ve QR ni gafete: son la llave de la puerta del
+  // Encuentro. Va antes que la rama del pago porque su registro también llega
+  // aprobado —no debe nada— y caería en la vista de acceso.
+  if (!asiste) {
+    main.innerHTML = vistaSinAsistencia(p, estado);
+    return;
+  }
 
   if (aprobado) {
     // Un solo código, al tamaño mayor de los que hacen falta. Las tres

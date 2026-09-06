@@ -181,6 +181,68 @@ describe('renderPortal', () => {
 });
 
 // ── Pantalla de error ───────────────────────────────────────────
+// ── Registros de la asamblea ────────────────────────────────────
+//
+// Llegan con `pago_aprobado = 1` porque no deben nada, así que caen en la misma
+// rama que quien ya pagó. Lo que estas pruebas fijan es que no se les cuente un
+// pago que nunca hicieron, y que a quien dijo que no viene no se le entregue la
+// llave de la puerta.
+describe('renderPortal con un registro de asamblea', () => {
+  const ASAMBLEA: Participante = {
+    ...P,
+    perfil: 'Asambleísta Encuadre',
+    taller: 'Sin taller · Asamblea',
+    institucion: 'Universidad de Prueba',
+    fecha_expiracion: undefined,
+    pago_aprobado: 1,
+    requiere_pago: 0,
+    asiste_encuentro: 1,
+    taller_preferencia: 'Futurología aplicada al diseño',
+  };
+
+  it('no le anuncia un pago aprobado, y sí su registro y su QR', async () => {
+    await renderPortal(ASAMBLEA, 'https://api.test');
+
+    expect(hueco().textContent).toContain('Registro confirmado');
+    expect(hueco().textContent).not.toContain('Pago Aprobado');
+    expect(hueco().querySelector('#qr-img')).not.toBeNull();
+    // Ni cola de cobro ni formulario de subida: no hay nada que pagar.
+    expect(hueco().querySelector('#comp-input')).toBeNull();
+  });
+
+  it('enseña el taller que prefiere y no el centinela del Worker', async () => {
+    await renderPortal(ASAMBLEA, 'https://api.test');
+
+    expect(hueco().textContent).toContain('Taller de tu interés');
+    expect(hueco().textContent).toContain('Futurología aplicada al diseño');
+    expect(hueco().textContent).not.toContain('Sin taller');
+  });
+
+  it('no deja ninguna cuenta atrás corriendo', async () => {
+    vi.useFakeTimers();
+    await renderPortal(ASAMBLEA, 'https://api.test');
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('a quien dijo que no asiste no le entrega el QR ni el gafete', async () => {
+    await renderPortal({ ...ASAMBLEA, asiste_encuentro: 0 }, 'https://api.test');
+
+    expect(hueco().textContent).toContain('no asistirás');
+    expect(hueco().querySelector('#qr-img')).toBeNull();
+    expect(hueco().querySelector('#btn-imprimir')).toBeNull();
+    // Sus datos sí quedan a la vista, que es a lo que entra al portal.
+    expect(hueco().textContent).toContain('Datos de tu registro');
+  });
+
+  it('el perfil llega al atributo con su etiqueta, no con el texto del servidor', async () => {
+    await renderPortal(ASAMBLEA, 'https://api.test');
+
+    const insignia = hueco().querySelector('.perfil-badge');
+    expect(insignia?.getAttribute('data-perfil')).toBe('asambleista');
+    expect(insignia?.textContent).toBe('Asambleísta Encuadre');
+  });
+});
+
 describe('renderError', () => {
   it('solo cablea el reintento cuando se le pasa uno', () => {
     const reintentar = vi.fn();

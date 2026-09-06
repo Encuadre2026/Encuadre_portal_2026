@@ -25,7 +25,27 @@ export interface EstadoPortal {
  * Un pago aprobado manda sobre todo lo demás, y solo si no lo está tiene
  * sentido preguntar si ya envió comprobante.
  */
-export function estadoDe(aprobado: boolean, tieneComprobante: boolean): EstadoPortal {
+export function estadoDe(
+  aprobado: boolean,
+  tieneComprobante: boolean,
+  opciones: { requierePago?: boolean; asiste?: boolean } = {},
+): EstadoPortal {
+  const { requierePago = true, asiste = true } = opciones;
+
+  // Un registro sin cuota —el de la asamblea de ENCUADRE— llega siempre con
+  // `pago_aprobado = 1`, y anunciarlo como «Pago aprobado» cuenta algo que no
+  // ocurrió. Lo que distingue «no debe nada» de «ya pagó» es `requiere_pago`,
+  // no la bandera del pago, así que se pregunta antes que nada.
+  if (!requierePago) {
+    return {
+      clase: 'aprobado',
+      titulo: 'Registro confirmado',
+      desc: asiste
+        ? 'Tu lugar está confirmado y no hay nada que pagar. Puedes descargar tu QR e imprimir tu gafete.'
+        : 'Queda registrado que no asistirás al Encuentro. Si cambian tus planes, escríbenos y lo actualizamos.',
+    };
+  }
+
   if (aprobado) {
     return {
       clase: 'aprobado',
@@ -59,6 +79,51 @@ export function bannerEstado(estado: EstadoPortal): string {
 }
 
 /**
+ * ¿Es un registro sin cuota, es decir, de la asamblea de ENCUADRE?
+ *
+ * Se pregunta por `requiere_pago` y no por el perfil: el nombre del perfil es
+ * texto de captura que puede cambiar de una edición a otra, mientras que este
+ * campo lo decide el Worker, que es quien aplica la regla. Cuando el campo no
+ * viene —una respuesta de antes de septiembre de 2026— se asume que sí paga,
+ * que es lo que vale para todos los demás perfiles.
+ */
+export function esSinCuota(p: Participante): boolean {
+  return p.requiere_pago !== undefined && !p.requiere_pago;
+}
+
+/** ¿Dijo que asistirá? Sin respuesta —el resto de perfiles— se asume que sí. */
+export function asisteAlEncuentro(p: Participante): boolean {
+  return p.asiste_encuentro === undefined || p.asiste_encuentro === null || Boolean(p.asiste_encuentro);
+}
+
+/**
+ * Qué taller enseñar y cómo llamarlo.
+ *
+ * A la asamblea no se le asigna taller: en `taller` trae la fila centinela del
+ * Worker, «Sin taller · Asamblea», que existe solo porque esa columna no admite
+ * nulos. Lo que sí contestó —si contestó— es el taller que le gustaría, y eso
+ * llega en `taller_preferencia`. Enseñar el centinela bajo el rótulo «Taller
+ * asignado» diría dos cosas falsas a la vez: que hay taller y que está inscrito
+ * en él.
+ */
+export function tallerDe(p: Participante): { etiqueta: string; valor: string } {
+  if (!esSinCuota(p)) return { etiqueta: 'Taller asignado', valor: p.taller };
+  if (p.taller_preferencia) return { etiqueta: 'Taller de tu interés', valor: p.taller_preferencia };
+  return { etiqueta: 'Taller', valor: 'No aplica' };
+}
+
+/**
+ * La misma etiqueta, recortada para el gafete.
+ *
+ * Ahí el rótulo vive en una tarjeta de 8 cm y siempre ha dicho «Taller» a
+ * secas; alargarlo a «Taller asignado» partiría la línea en dos en el gafete de
+ * todo el mundo, no solo en el de la asamblea.
+ */
+function etiquetaTallerGafete(p: Participante): string {
+  return esSinCuota(p) && p.taller_preferencia ? 'Taller de interés' : 'Taller';
+}
+
+/**
  * Datos del registro.
  *
  * Estaba escrito dos veces, una por rama de estado, y las dos copias ya habían
@@ -66,6 +131,7 @@ export function bannerEstado(estado: EstadoPortal): string {
  * el estado del pago. Con una sola definición, esa deriva no puede repetirse.
  */
 export function tarjetaDatos(p: Participante): string {
+  const taller = tallerDe(p);
   return `
       <div class="card">
         <p class="card-title">Datos de tu registro</p>
@@ -83,8 +149,8 @@ export function tarjetaDatos(p: Participante): string {
             <span class="dato-valor"><span class="perfil-badge" data-perfil="${normalizarPerfil(p.perfil)}">${p.perfil}</span></span>
           </div>
           <div class="dato-item full">
-            <span class="dato-label">Taller asignado</span>
-            <span class="dato-valor">${p.taller}</span>
+            <span class="dato-label">${taller.etiqueta}</span>
+            <span class="dato-valor">${taller.valor}</span>
           </div>
           <div class="dato-item">
             <span class="dato-label">Institución</span>
@@ -181,8 +247,8 @@ export function gafete(p: Participante, qr: string, baseUrl: string): string {
               <div class="gafete-body">
                 <div class="gafete-nombre">${p.nombre}</div>
                 <span class="gafete-perfil-badge">${p.perfil}</span>
-                <div class="gafete-taller-label">Taller</div>
-                <div class="gafete-taller-nombre">${p.taller}</div>
+                <div class="gafete-taller-label">${etiquetaTallerGafete(p)}</div>
+                <div class="gafete-taller-nombre">${tallerDe(p).valor}</div>
                 <div class="gafete-footer">
                   ${qrChico}
                   <div>
@@ -274,6 +340,19 @@ export function vistaAprobado(p: Participante, estado: EstadoPortal, qr: string,
         ${gafete(p, qr, baseUrl)}
       </div>
     </div>`;
+}
+
+/**
+ * Vista de quien está registrado pero dijo que no asistirá.
+ *
+ * Sin QR ni gafete a propósito: son la llave de la puerta del Encuentro, y
+ * enseñárselos a quien contestó que no viene le hace creer que se le espera
+ * allí. Sus datos sí quedan a la vista para que pueda revisarlos.
+ */
+export function vistaSinAsistencia(p: Participante, estado: EstadoPortal): string {
+  return `
+    ${bannerEstado(estado)}
+    ${tarjetaDatos(p)}`;
 }
 
 /** Vista de quien todavía no tiene el pago aprobado. */

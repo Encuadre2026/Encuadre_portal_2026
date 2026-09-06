@@ -47,6 +47,9 @@
   --perfil-profesor: #30d158;
   --perfil-profesional: #ff9f0a;
   --perfil-investigador: #bf5af2;
+  /* La asamblea de ENCUADRE. Cian, que es el hueco que quedaba libre entre el
+     azul del estudiante y el verde del profesor. */
+  --perfil-asambleista: #64d2ff;
   --perfil-generico: #6b7280;
 
   --radio: 12px;
@@ -408,6 +411,9 @@ body {
 }
 [data-perfil='investigador'] {
   --perfil-actual: var(--perfil-investigador);
+}
+[data-perfil='asambleista'] {
+  --perfil-actual: var(--perfil-asambleista);
 }
 
 .perfil-badge {
