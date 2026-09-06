@@ -32,17 +32,32 @@ export function estadoDe(
 ): EstadoPortal {
   const { requierePago = true, asiste = true } = opciones;
 
-  // Un registro sin cuota —el de la asamblea de ENCUADRE— llega siempre con
-  // `pago_aprobado = 1`, y anunciarlo como «Pago aprobado» cuenta algo que no
-  // ocurrió. Lo que distingue «no debe nada» de «ya pagó» es `requiere_pago`,
-  // no la bandera del pago, así que se pregunta antes que nada.
+  // Un registro sin cuota —el de la asamblea de ENCUADRE— no debe dinero, así
+  // que ni «Pago aprobado» ni «Pendiente de comprobante» dicen la verdad sobre
+  // él. Lo que distingue «no debe nada» de «ya pagó» es `requiere_pago`, no la
+  // bandera del pago, así que se pregunta antes que nada.
   if (!requierePago) {
+    if (!asiste) {
+      return {
+        clase: 'aprobado',
+        titulo: 'Registro confirmado',
+        desc: 'Queda registrado que no asistirás al Encuentro. Si cambian tus planes, escríbenos y lo actualizamos.',
+      };
+    }
+    // Aquí `pago_aprobado = 0` no es una deuda: es que todavía nadie ha mirado
+    // el oficio que acredita a esta persona ante la asamblea. Hasta que alguien
+    // lo mire no hay código de acceso que enseñar.
+    if (!aprobado) {
+      return {
+        clase: 'revision',
+        titulo: 'Acreditación en revisión',
+        desc: 'Recibimos tu registro y tu oficio. En cuanto la organización lo valide te llegará por correo tu código de acceso. No tienes que pagar nada.',
+      };
+    }
     return {
       clase: 'aprobado',
       titulo: 'Registro confirmado',
-      desc: asiste
-        ? 'Tu lugar está confirmado y no hay nada que pagar. Puedes descargar tu QR e imprimir tu gafete.'
-        : 'Queda registrado que no asistirás al Encuentro. Si cambian tus planes, escríbenos y lo actualizamos.',
+      desc: 'Tu lugar está confirmado y no hay nada que pagar. Puedes descargar tu QR e imprimir tu gafete.',
     };
   }
 
@@ -347,13 +362,15 @@ export function vistaAprobado(p: Participante, estado: EstadoPortal, qr: string,
 }
 
 /**
- * Vista de quien está registrado pero dijo que no asistirá.
+ * Vista de solo lectura: el estado y los datos, sin QR ni gafete.
  *
- * Sin QR ni gafete a propósito: son la llave de la puerta del Encuentro, y
- * enseñárselos a quien contestó que no viene le hace creer que se le espera
- * allí. Sus datos sí quedan a la vista para que pueda revisarlos.
+ * La usan los dos registros que no tienen ninguna llave que entregar todavía:
+ * quien contestó que no asistirá —enseñarle un código de acceso le haría creer
+ * que se le espera en la puerta— y quien espera a que la organización revise su
+ * acreditación. Tampoco lleva formulario de subida: no hay pago pendiente que
+ * justifique pedirle un comprobante.
  */
-export function vistaSinAsistencia(p: Participante, estado: EstadoPortal): string {
+export function vistaSoloDatos(p: Participante, estado: EstadoPortal): string {
   return `
     ${bannerEstado(estado)}
     ${tarjetaDatos(p)}`;

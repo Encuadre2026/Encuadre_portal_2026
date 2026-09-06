@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   bannerEstado,
   estadoDe,
-  vistaSinAsistencia,
+  vistaSoloDatos,
   formularioComprobante,
   paginaError,
   tarjetaDatos,
@@ -61,6 +61,17 @@ describe('estadoDe', () => {
     expect(estado.desc).toContain('no hay nada que pagar');
   });
 
+  // Mientras nadie ha revisado su oficio, un asambleísta llega con
+  // `pago_aprobado = 0`, que en su caso no es una deuda. Ni «Pendiente de
+  // comprobante» ni «Pago aprobado» dicen la verdad sobre él.
+  it('sin cuota y sin aprobar, la acreditación está en revisión', () => {
+    const estado = estadoDe(false, false, { requierePago: false });
+    expect(estado.clase).toBe('revision');
+    expect(estado.titulo).toBe('Acreditación en revisión');
+    expect(estado.desc).toContain('No tienes que pagar nada');
+    expect(estado.desc).not.toContain('comprobante de pago');
+  });
+
   it('a quien no asiste no se le habla de gafete', () => {
     const estado = estadoDe(true, false, { requierePago: false, asiste: false });
     expect(estado.desc).toContain('no asistirás');
@@ -113,9 +124,17 @@ describe('taller de la asamblea', () => {
     expect(html).toContain('Futurología aplicada al diseño');
   });
 
+  it('quien espera aprobación tampoco recibe QR ni formulario de pago', () => {
+    const estado = estadoDe(false, false, { requierePago: false });
+    const html = vistaSoloDatos({ ...ASAMBLEA, pago_aprobado: 0 }, estado);
+    expect(html).not.toContain('qr-img');
+    expect(html).not.toContain('id="comp-input"');
+    expect(html).toContain('Acreditación en revisión');
+  });
+
   it('quien no asiste no recibe QR ni gafete', () => {
     const estado = estadoDe(true, false, { requierePago: false, asiste: false });
-    const html = vistaSinAsistencia({ ...ASAMBLEA, asiste_encuentro: 0 }, estado);
+    const html = vistaSoloDatos({ ...ASAMBLEA, asiste_encuentro: 0 }, estado);
     expect(html).not.toContain('qr-img');
     expect(html).not.toContain('gafete');
     expect(html).toContain('Datos de tu registro');

@@ -8,7 +8,7 @@ import {
   paginaError,
   vistaAprobado,
   vistaPendiente,
-  vistaSinAsistencia,
+  vistaSoloDatos,
 } from './plantillas';
 
 // Este módulo compone las plantillas y conecta los eventos. El HTML vive en
@@ -93,11 +93,14 @@ export async function renderPortal(
   const asiste = asisteAlEncuentro(p);
   const estado = estadoDe(aprobado, tieneComp, { requierePago, asiste });
 
-  // Quien dijo que no asiste no ve QR ni gafete: son la llave de la puerta del
-  // Encuentro. Va antes que la rama del pago porque su registro también llega
-  // aprobado —no debe nada— y caería en la vista de acceso.
-  if (!asiste) {
-    main.innerHTML = vistaSinAsistencia(p, estado);
+  // Dos registros no tienen ninguna llave que entregar: el de quien dijo que no
+  // asiste —el QR es la puerta del Encuentro, y dárselo le haría creer que se
+  // le espera— y el de la asamblea mientras nadie ha revisado su acreditación.
+  // Van antes que la rama del pago porque ninguno de los dos debe dinero, así
+  // que el estado del pago no dice nada útil sobre ellos.
+  const esperaAprobacion = !requierePago && !aprobado;
+  if (!asiste || esperaAprobacion) {
+    main.innerHTML = vistaSoloDatos(p, estado);
     return;
   }
 

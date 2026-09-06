@@ -224,6 +224,20 @@ describe('renderPortal con un registro de asamblea', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  // El caso recién dado de alta: la organización todavía no ha mirado su
+  // oficio. No debe dinero, así que tampoco puede verse como una cola de cobro.
+  it('mientras espera aprobación no ve QR, ni gafete, ni formulario de pago', async () => {
+    await renderPortal({ ...ASAMBLEA, pago_aprobado: 0 }, 'https://api.test');
+
+    expect(hueco().textContent).toContain('Acreditación en revisión');
+    expect(hueco().textContent).not.toContain('Pendiente de Comprobante');
+    expect(hueco().querySelector('#qr-img')).toBeNull();
+    expect(hueco().querySelector('#btn-imprimir')).toBeNull();
+    expect(hueco().querySelector('#comp-input')).toBeNull();
+    // Y sus datos siguen a la vista, que es a lo que entró.
+    expect(hueco().textContent).toContain('Datos de tu registro');
+  });
+
   it('a quien dijo que no asiste no le entrega el QR ni el gafete', async () => {
     await renderPortal({ ...ASAMBLEA, asiste_encuentro: 0 }, 'https://api.test');
 

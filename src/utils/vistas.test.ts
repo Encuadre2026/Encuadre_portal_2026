@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { sanearParticipante } from './vistas';
-import { tarjetaDatos, vistaAprobado, vistaPendiente, vistaSinAsistencia, estadoDe } from './plantillas';
+import { tarjetaDatos, vistaAprobado, vistaPendiente, vistaSoloDatos, estadoDe } from './plantillas';
 import type { Participante } from './api';
 
 /**
@@ -81,7 +81,7 @@ function todoElHtml(p: Participante): string {
     vistaAprobado(p, estadoDe(true, true), '', ''),
     tarjetaDatos(asamblea),
     vistaAprobado(asamblea, estadoAsamblea, '', ''),
-    vistaSinAsistencia(asamblea, estadoAsamblea),
+    vistaSoloDatos(asamblea, estadoAsamblea),
   ].join('\n');
 }
 
