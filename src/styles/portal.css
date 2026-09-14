@@ -514,6 +514,27 @@ body {
   background: rgba(231, 216, 24, 0.05);
 }
 
+/* Para una salida, no para una acción: cancelar un reemplazo no merece el mismo
+   peso visual que enviarlo, y dos botones macizos apilados hacen dudar sobre
+   cuál es el que continúa. */
+.btn-texto {
+  background: transparent;
+  color: var(--texto-muted);
+  border: none;
+  padding: 12px 16px;
+  font-size: 11px;
+  /* Sin la versalita de `.btn`: es una frase, no un rótulo de dos palabras, y
+     en mayúsculas con letter-spacing ocupaba dos renglones y gritaba más que
+     el botón que sí continúa. */
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
+}
+
+.btn-texto:hover {
+  color: var(--texto);
+}
+
 .btn-full {
   width: 100%;
   margin-top: 20px;
@@ -808,6 +829,27 @@ body {
 
 .upload-ya-enviado strong {
   color: var(--estado-aprobado);
+}
+
+/* ── Comprobante: ofrecer el reemplazo ────────────────────── */
+/* Los dos se turnan en el mismo hueco —el ofrecimiento hasta que se pulsa, los
+   campos después—, así que llevan el mismo separador: es una salida para el
+   caso raro —un pago que el banco devolvió, un archivo equivocado—, no la
+   continuación de la buena noticia, y sin la línea se lee como un solo bloque
+   con ella. Cuando solo lo llevaba el aviso, al desplegarse se iba con él y la
+   zona de arrastre quedaba pegada al recuadro verde. */
+.upload-reemplazo,
+.upload-zona-reemplazo {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--borde);
+}
+
+.upload-reemplazo-texto {
+  font-size: 13px;
+  color: var(--texto-suave);
+  line-height: 1.6;
+  margin-bottom: 14px;
 }
 
 /* ── Comprobante: archivo seleccionado ────────────────────── */

@@ -286,23 +286,23 @@ export function gafete(p: Participante, qr: string, baseUrl: string): string {
       </div>`;
 }
 
-/** Confirmación de que el comprobante ya llegó y está en revisión. */
-export function comprobanteRecibido(): string {
+/**
+ * Los campos de subida: la zona de arrastre, el archivo elegido y el botón.
+ *
+ * Está fuera de `formularioComprobante` porque los usan dos pantallas —la de
+ * quien todavía no ha enviado nada y la de quien quiere sustituir lo que envió—
+ * y lo único que cambia entre ellas es el rótulo del botón.
+ *
+ * La etiqueta accesible se deriva del rótulo en vez de estar fijada: era un
+ * texto suelto —«Enviar comprobante de pago en formato PDF»— que no contenía
+ * lo que el botón dice en pantalla, así que quien maneja el portal por voz
+ * pedía «reemplazar comprobante» y no activaba nada.
+ *
+ * Los identificadores se repiten entre ambas, pero nunca coinciden en la
+ * página: `vistaPendiente` pinta una plantilla o la otra, jamás las dos.
+ */
+function camposDeSubida(rotuloBoton: string): string {
   return `
-      <div class="card upload-section">
-        <p class="card-title">Comprobante de pago</p>
-        <div class="upload-ya-enviado upload-ya-enviado-aviso">
-          <strong>Comprobante recibido exitosamente.</strong><br><br>
-          Nuestro equipo está verificando tu pago. Te notificaremos por correo cuando sea aprobado.
-        </div>
-      </div>`;
-}
-
-/** Formulario de subida. Los eventos los cablea `setupUpload`. */
-export function formularioComprobante(): string {
-  return `
-      <div class="card upload-section">
-        <p class="card-title">Comprobante de pago</p>
         <div class="upload-area" id="upload-area" role="button" tabindex="0" aria-label="Seleccionar o arrastrar archivo PDF de comprobante de pago">
           <input type="file" id="comp-input" accept="application/pdf" class="oculto" aria-hidden="true" />
           <svg class="upload-icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
@@ -312,10 +312,55 @@ export function formularioComprobante(): string {
           <p class="upload-hint">Solo archivos PDF &bull; Máximo ${MAX_PDF_MB} MB</p>
         </div>
         <div id="file-info" class="oculto"></div>
-        <button class="btn btn-primary btn-full" id="btn-subir" disabled aria-label="Enviar comprobante de pago en formato PDF">Subir comprobante</button>
+        <button class="btn btn-primary btn-full" id="btn-subir" disabled aria-label="${rotuloBoton} de pago en formato PDF">${rotuloBoton}</button>
         <p class="upload-nota">
           Solo archivos PDF. Si tienes algún problema para subirlo, contáctanos.
-        </p>
+        </p>`;
+}
+
+/**
+ * Confirmación de que el comprobante ya llegó, con la opción de sustituirlo.
+ *
+ * Recibirlo no siempre es el final: a alguien le devolvió el banco el dinero y
+ * tuvo que pagar de nuevo, y también se sube el archivo equivocado. Antes, el
+ * único camino era escribir a la organización para que lo arreglara a mano.
+ *
+ * La zona de reemplazo nace plegada a propósito. Enseñar una zona de arrastre
+ * vacía justo debajo de «comprobante recibido» se lee como que el envío no
+ * llegó, y lo que la mayoría necesita ver aquí es exactamente lo contrario.
+ */
+export function comprobanteRecibido(): string {
+  return `
+      <div class="card upload-section">
+        <p class="card-title">Comprobante de pago</p>
+        <div class="upload-ya-enviado upload-ya-enviado-aviso">
+          <strong>Comprobante recibido exitosamente.</strong><br><br>
+          Nuestro equipo está verificando tu pago. Te notificaremos por correo cuando sea aprobado.
+        </div>
+        <div class="upload-reemplazo" id="aviso-reemplazo">
+          <p class="upload-reemplazo-texto">
+            ¿Tu banco te devolvió el pago y tuviste que hacerlo otra vez, o subiste el archivo
+            equivocado? Puedes sustituir tu comprobante: se conserva únicamente el último que envíes.
+          </p>
+          <button class="btn btn-outline" id="btn-reemplazar" type="button" aria-expanded="false" aria-controls="zona-reemplazo">
+            Reemplazar comprobante
+          </button>
+        </div>
+        <div id="zona-reemplazo" class="upload-zona-reemplazo oculto">
+          ${camposDeSubida('Reemplazar comprobante')}
+          <button class="btn btn-texto btn-full" id="btn-cancelar-reemplazo" type="button">
+            Cancelar y dejar el comprobante que ya envié
+          </button>
+        </div>
+      </div>`;
+}
+
+/** Formulario de subida. Los eventos los cablea `setupUpload`. */
+export function formularioComprobante(): string {
+  return `
+      <div class="card upload-section">
+        <p class="card-title">Comprobante de pago</p>
+        ${camposDeSubida('Subir comprobante')}
       </div>`;
 }
 

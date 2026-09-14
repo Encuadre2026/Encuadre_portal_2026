@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   bannerEstado,
+  comprobanteRecibido,
   estadoDe,
   vistaSoloDatos,
   formularioComprobante,
@@ -207,10 +208,39 @@ describe('vistas completas', () => {
     expect(html).not.toContain('cd-inner');
   });
 
-  it('quien ya envió comprobante no ve el formulario de subida', () => {
+  it('quien ya envió comprobante ve la confirmación, con el reemplazo plegado', () => {
+    // El formulario está en la página, pero no a la vista: una zona de arrastre
+    // vacía justo debajo de «comprobante recibido» se lee como que el envío no
+    // llegó. Hay que pedirlo con el botón.
     const html = vistaPendiente(P, estadoDe(false, true), true);
-    expect(html).not.toContain('id="comp-input"');
     expect(html).toContain('Comprobante recibido exitosamente');
+    expect(html).toContain('id="btn-reemplazar"');
+    expect(html).toContain('id="comp-input"');
+    // Lo que importa es que nazca plegada, no el orden de sus clases.
+    expect(html).toMatch(/id="zona-reemplazo" class="[^"]*\boculto\b/);
+  });
+
+  it('el motivo del reemplazo nombra también el pago que devolvió el banco', () => {
+    // Es el caso que originó la pantalla, y el que nadie encuentra si el texto
+    // solo habla de haberse equivocado de archivo.
+    expect(comprobanteRecibido()).toContain('banco te devolvió el pago');
+  });
+
+  it('las dos pantallas rotulan su botón según lo que hace', () => {
+    expect(formularioComprobante()).toContain('>Subir comprobante</button>');
+    expect(comprobanteRecibido()).toContain('>Reemplazar comprobante</button>');
+  });
+
+  it('la etiqueta accesible del botón contiene lo que el botón dice', () => {
+    // Era un texto fijo —«Enviar comprobante de pago…»— que no contenía el
+    // rótulo de ninguna de las dos pantallas: quien maneja el portal por voz
+    // pedía «reemplazar comprobante» y no activaba nada (WCAG 2.5.3).
+    expect(formularioComprobante()).toContain('aria-label="Subir comprobante de pago en formato PDF"');
+    expect(comprobanteRecibido()).toContain('aria-label="Reemplazar comprobante de pago en formato PDF"');
+  });
+
+  it('el reemplazo ofrece una salida sin cambiar nada', () => {
+    expect(comprobanteRecibido()).toContain('id="btn-cancelar-reemplazo"');
   });
 });
 
