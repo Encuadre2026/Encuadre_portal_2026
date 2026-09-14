@@ -46,6 +46,25 @@ function dentroDe(horas: number): string {
   return new Date(Date.now() + horas * 3600_000).toISOString().replace('T', ' ').slice(0, 19);
 }
 
+/**
+ * Simula la elección de un archivo, que no se puede asignar a `input.files`.
+ *
+ * Se imita también `value`, que jsdom deja vacío y el navegador rellena con la
+ * ruta del archivo. Sin eso, comprobar que el portal lo vacía —lo que permite
+ * volver a elegir el mismo archivo tras cancelar o tras un rechazo— pasaría
+ * solo, sin ejercer nada.
+ */
+function elegir(input: HTMLInputElement, archivo: File) {
+  Object.defineProperty(input, 'files', { value: [archivo], configurable: true });
+  let valor = `C:\\fakepath\\${archivo.name}`;
+  Object.defineProperty(input, 'value', {
+    configurable: true,
+    get: () => valor,
+    set: (nuevo: string) => (valor = nuevo),
+  });
+  input.dispatchEvent(new Event('change'));
+}
+
 function pdf(nombre = 'comprobante.pdf', bytes = 1024): File {
   return new File([new Uint8Array(bytes)], nombre, { type: 'application/pdf' });
 }
@@ -280,12 +299,6 @@ describe('setupUpload', () => {
     };
   }
 
-  /** Simula la elección de un archivo, que no se puede asignar a `input.files`. */
-  function elegir(input: HTMLInputElement, archivo: File) {
-    Object.defineProperty(input, 'files', { value: [archivo], configurable: true });
-    input.dispatchEvent(new Event('change'));
-  }
-
   const textoDeLosToasts = () =>
     [...document.querySelectorAll('#toast-container .toast')].map((t) => t.textContent).join(' | ');
 
@@ -377,7 +390,9 @@ describe('setupUpload', () => {
     boton.dispatchEvent(new MouseEvent('click'));
 
     await vi.waitFor(() => expect(document.body.textContent).toContain('Comprobante recibido exitosamente'));
-    expect(document.getElementById('comp-input')).toBeNull();
+    // El formulario sigue en la página para poder sustituir el comprobante,
+    // pero plegado: lo que se ve es la confirmación.
+    expect(document.getElementById('zona-reemplazo')?.className).toContain('oculto');
     expect(document.querySelector('.estado-banner')?.className).toContain('revision');
   });
 
@@ -448,8 +463,190 @@ describe('setupUpload', () => {
     expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
   });
 
+  it('un archivo rechazado deja el campo libre para reintentarlo', async () => {
+    // Quien lee «supera los 5 MB» vuelve a exportar su comprobante, casi
+    // siempre con el mismo nombre. Si el campo conserva el valor anterior, el
+    // navegador no emite «change» y esa segunda elección no hace nada.
+    const { input, boton } = await prepararFormulario();
+
+    elegir(input, pdf('comprobante.pdf', MAX_PDF_BYTES + 1));
+
+    expect(textoDeLosToasts()).toContain('supera los 5 MB');
+    expect(boton.disabled).toBe(true);
+    expect(input.value).toBe('');
+  });
+
+  it('lo mismo cuando no es un PDF', async () => {
+    const { input } = await prepararFormulario();
+
+    elegir(input, new File([new Uint8Array(8)], 'foto.png', { type: 'image/png' }));
+
+    expect(textoDeLosToasts()).toContain('Solo se aceptan archivos PDF');
+    expect(input.value).toBe('');
+  });
+
   it('no explota si el formulario no está en pantalla', () => {
     hueco().innerHTML = '';
     expect(() => setupUpload(P, 'https://api.test', '', 'TOK')).not.toThrow();
+  });
+});
+
+// ── Reemplazo de un comprobante ya enviado ──────────────────────
+//
+// Antes, recibirlo cerraba la puerta: la vista dejaba de pintar el formulario y
+// la única salida era escribir a la organización. Pero el pago puede volver
+// atrás —a un participante se lo devolvió el banco y tuvo que pagar de nuevo— y
+// el archivo puede ser el equivocado.
+describe('reemplazar el comprobante', () => {
+  /** Pinta el portal de quien ya envió comprobante y el pago sigue sin aprobar. */
+  async function prepararRevision() {
+    await renderPortal(
+      { ...P, tiene_comprobante: 1, fecha_expiracion: dentroDe(48) },
+      'https://api.test',
+      '',
+      'TOK-123',
+    );
+    return document.getElementById('btn-reemplazar') as HTMLButtonElement;
+  }
+
+  it('nace plegado para no parecer que el envío falló', async () => {
+    await prepararRevision();
+
+    expect(document.getElementById('zona-reemplazo')?.className).toContain('oculto');
+    expect(document.getElementById('btn-reemplazar')?.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('el botón despliega los campos y mueve el foco a la zona de arrastre', async () => {
+    const btn = await prepararRevision();
+
+    btn.dispatchEvent(new MouseEvent('click'));
+
+    expect(document.getElementById('zona-reemplazo')?.className).not.toContain('oculto');
+    expect(btn.getAttribute('aria-expanded')).toBe('true');
+    // El botón que se acaba de pulsar desaparece: sin mover el foco, quien
+    // navega con teclado se queda en un elemento que ya no está.
+    expect(document.getElementById('aviso-reemplazo')?.className).toContain('oculto');
+    expect(document.activeElement).toBe(document.getElementById('upload-area'));
+  });
+
+  it('cancelar vuelve a plegar y devuelve el foco al botón', async () => {
+    const btn = await prepararRevision();
+    btn.dispatchEvent(new MouseEvent('click'));
+
+    document.getElementById('btn-cancelar-reemplazo')?.dispatchEvent(new MouseEvent('click'));
+
+    expect(document.getElementById('zona-reemplazo')?.className).toContain('oculto');
+    expect(document.getElementById('aviso-reemplazo')?.className).not.toContain('oculto');
+    expect(btn.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(btn);
+  });
+
+  it('cancelar descarta el archivo que se había elegido', async () => {
+    // Sin esto, al reabrir seguía en pantalla la ficha del archivo anterior y
+    // el botón listo para enviarlo, que es justo lo que se acaba de cancelar.
+    const btn = await prepararRevision();
+    btn.dispatchEvent(new MouseEvent('click'));
+    const boton = document.getElementById('btn-subir') as HTMLButtonElement;
+    elegir(document.getElementById('comp-input') as HTMLInputElement, pdf('el-que-no-era.pdf'));
+    expect(boton.disabled).toBe(false);
+
+    document.getElementById('btn-cancelar-reemplazo')?.dispatchEvent(new MouseEvent('click'));
+    btn.dispatchEvent(new MouseEvent('click'));
+
+    expect(boton.disabled).toBe(true);
+    const info = document.getElementById('file-info') as HTMLElement;
+    expect(info.className).toContain('oculto');
+    expect(info.textContent).not.toContain('el-que-no-era.pdf');
+  });
+
+  it('cancelar vacía el campo, para poder reelegir el mismo archivo', async () => {
+    // El navegador solo emite «change» cuando el valor cambia. Con el anterior
+    // todavía puesto, volver a elegir EL MISMO archivo —lo más probable si se
+    // canceló por error— no avisaba a nadie: ni ficha, ni botón, ni error.
+    const btn = await prepararRevision();
+    btn.dispatchEvent(new MouseEvent('click'));
+    const input = document.getElementById('comp-input') as HTMLInputElement;
+    elegir(input, pdf());
+
+    document.getElementById('btn-cancelar-reemplazo')?.dispatchEvent(new MouseEvent('click'));
+
+    expect(input.value).toBe('');
+  });
+
+  it('tras cancelar no se envía nada', async () => {
+    const btn = await prepararRevision();
+    btn.dispatchEvent(new MouseEvent('click'));
+    elegir(document.getElementById('comp-input') as HTMLInputElement, pdf());
+    document.getElementById('btn-cancelar-reemplazo')?.dispatchEvent(new MouseEvent('click'));
+
+    document.getElementById('btn-subir')?.dispatchEvent(new MouseEvent('click'));
+
+    expect(subirComprobante).not.toHaveBeenCalled();
+  });
+
+  it('no deja cancelar una subida que ya va en camino', async () => {
+    // La petición no se puede retirar: plegar el formulario a media subida
+    // prometía «dejar el comprobante que ya envié» cuando el archivo nuevo
+    // estaba llegando igualmente.
+    const btn = await prepararRevision();
+    btn.dispatchEvent(new MouseEvent('click'));
+    vi.mocked(subirComprobante).mockImplementation(() => new Promise((r) => setTimeout(() => r('ok'), 50)));
+
+    elegir(document.getElementById('comp-input') as HTMLInputElement, pdf());
+    document.getElementById('btn-subir')?.dispatchEvent(new MouseEvent('click'));
+
+    const cancelar = document.getElementById('btn-cancelar-reemplazo') as HTMLButtonElement;
+    await vi.waitFor(() => expect(cancelar.disabled).toBe(true));
+  });
+
+  it('un fallo devuelve la salida a quien la necesita', async () => {
+    const btn = await prepararRevision();
+    btn.dispatchEvent(new MouseEvent('click'));
+    vi.mocked(subirComprobante).mockRejectedValue(new ErrorApi('Error al subir el archivo', 'ERROR_SERVIDOR', 500));
+
+    elegir(document.getElementById('comp-input') as HTMLInputElement, pdf());
+    document.getElementById('btn-subir')?.dispatchEvent(new MouseEvent('click'));
+
+    const cancelar = document.getElementById('btn-cancelar-reemplazo') as HTMLButtonElement;
+    await vi.waitFor(() => expect(cancelar.disabled).toBe(false));
+  });
+
+  it('sube el comprobante nuevo con el token, no con el id_participante', async () => {
+    const btn = await prepararRevision();
+    btn.dispatchEvent(new MouseEvent('click'));
+    vi.mocked(subirComprobante).mockResolvedValue('Comprobante recibido.');
+
+    const input = document.getElementById('comp-input') as HTMLInputElement;
+    elegir(input, pdf('el-bueno.pdf'));
+    document.getElementById('btn-subir')?.dispatchEvent(new MouseEvent('click'));
+
+    await vi.waitFor(() => expect(subirComprobante).toHaveBeenCalled());
+    const [, credencial, archivo] = vi.mocked(subirComprobante).mock.calls[0];
+    expect(credencial).toBe('TOK-123');
+    expect(credencial).not.toBe(P.id_participante);
+    expect(archivo.name).toBe('el-bueno.pdf');
+  });
+
+  it('tras un fallo repone el rótulo de esta pantalla, no el de la otra', async () => {
+    // `permitirOtroIntento` reponía «Subir comprobante» escrito a mano, así que
+    // un error de red rebautizaba el botón a mitad del flujo.
+    const btn = await prepararRevision();
+    btn.dispatchEvent(new MouseEvent('click'));
+    vi.mocked(subirComprobante).mockRejectedValue(new ErrorApi('Error al subir el archivo', 'ERROR_SERVIDOR', 500));
+
+    const boton = document.getElementById('btn-subir') as HTMLButtonElement;
+    elegir(document.getElementById('comp-input') as HTMLInputElement, pdf());
+    boton.dispatchEvent(new MouseEvent('click'));
+
+    await vi.waitFor(() => expect(boton.disabled).toBe(false));
+    expect(boton.textContent).toBe('Reemplazar comprobante');
+  });
+
+  it('con el pago ya aprobado no se ofrece reemplazo', async () => {
+    // Ahí no hay nada que sustituir, y el Worker lo rechazaría con 409.
+    await renderPortal({ ...P, tiene_comprobante: 1, pago_aprobado: 1 }, 'https://api.test', '', 'TOK-123');
+
+    expect(document.getElementById('btn-reemplazar')).toBeNull();
+    expect(document.getElementById('comp-input')).toBeNull();
   });
 });

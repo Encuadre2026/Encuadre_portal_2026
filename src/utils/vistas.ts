@@ -116,10 +116,13 @@ export async function renderPortal(
     // La fecha no basta con que esté: si no se puede parsear, la cuenta atrás
     // se llenaba de `NaN` y seguía haciéndolo un tick por segundo.
     if (!tieneComp && esFechaValida(p.fecha_expiracion)) iniciarCountdown(p.fecha_expiracion);
-    // Se le entrega el participante **sin sanear**: el formulario repinta el
-    // portal al terminar la subida, y ese repintado vuelve a pasar por la
-    // frontera de escapado de aquí arriba.
-    if (!tieneComp) setupUpload(pRaw, apiBase, baseUrl, tokenPortal);
+    // Se cablea en los dos casos. Quien ya envió su comprobante tiene los
+    // mismos campos, plegados tras el botón de reemplazo, y hasta que no se
+    // cablearon aquí no había forma de sustituir un comprobante desde el
+    // portal. Se le entrega el participante **sin sanear**: el formulario
+    // repinta el portal al terminar la subida, y ese repintado vuelve a pasar
+    // por la frontera de escapado de aquí arriba.
+    setupUpload(pRaw, apiBase, baseUrl, tokenPortal);
   }
 }
 
@@ -136,22 +139,87 @@ function cablearImprimir(): void {
   document.getElementById('btn-imprimir')?.addEventListener('click', () => window.print());
 }
 
+/**
+ * Abre y cierra los campos de subida de quien ya envió un comprobante.
+ *
+ * No hace nada en la pantalla de quien todavía no ha enviado ninguno: ahí el
+ * botón no existe y el formulario ya está a la vista.
+ *
+ * El foco viaja con la vista en los dos sentidos. El control que se acaba de
+ * pulsar se esconde cada vez —abrir oculta el aviso, cerrar oculta la zona—,
+ * así que sin moverlo quien navega con teclado se queda en un elemento que ya
+ * no está y el recorrido vuelve a empezar por el principio del documento.
+ *
+ * Cerrar descarta el archivo elegido, y por eso lo limpia `setupUpload`, que es
+ * quien guarda esa variable: si no, al reabrir seguía en pantalla la ficha del
+ * archivo anterior con el botón listo para enviarlo, que es justo lo que acaba
+ * de decirse que no.
+ */
+function cablearReemplazo(limpiarSeleccion: () => void): void {
+  const abrir = document.getElementById('btn-reemplazar');
+  const cerrar = document.getElementById('btn-cancelar-reemplazo');
+  const zona = document.getElementById('zona-reemplazo');
+  const aviso = document.getElementById('aviso-reemplazo');
+  if (!abrir || !zona || !aviso) return;
+
+  abrir.addEventListener('click', () => {
+    zona.classList.remove('oculto');
+    aviso.classList.add('oculto');
+    abrir.setAttribute('aria-expanded', 'true');
+    document.getElementById('upload-area')?.focus();
+  });
+
+  cerrar?.addEventListener('click', () => {
+    limpiarSeleccion();
+    zona.classList.add('oculto');
+    aviso.classList.remove('oculto');
+    abrir.setAttribute('aria-expanded', 'false');
+    abrir.focus();
+  });
+}
+
 // ── Controlador de Eventos para Carga de PDF ────────────────────
 // Gestiona el arrastrar, soltar, teclado (a11y), progreso visual y transición sin recarga
 export function setupUpload(pRaw: Participante, apiBase: string, baseUrl: string, tokenPortal: string): void {
-  const input = document.getElementById('comp-input') as HTMLInputElement | null;
+  const inputOpcional = document.getElementById('comp-input') as HTMLInputElement | null;
   const area = document.getElementById('upload-area');
   const infoOpcional = document.getElementById('file-info');
   const btnOpcional = document.getElementById('btn-subir') as HTMLButtonElement | null;
-  if (!input || !area || !infoOpcional || !btnOpcional) return;
+  if (!inputOpcional || !area || !infoOpcional || !btnOpcional) return;
 
   // Se rebautizan tras la guarda porque dentro de las funciones anidadas
   // TypeScript no conserva el estrechamiento y volvía a verlos como nulos.
+  const input = inputOpcional;
   const info = infoOpcional;
   const btn = btnOpcional;
+  // Solo existe en la pantalla del reemplazo.
+  const btnCancelar = document.getElementById('btn-cancelar-reemplazo') as HTMLButtonElement | null;
 
   let archivo: File | null = null;
   let enviando = false;
+
+  // Lo que diga el botón al llegar, que depende de la pantalla: «Subir
+  // comprobante» la primera vez y «Reemplazar comprobante» después. Antes se
+  // reponía con el primero escrito a mano, así que un fallo de red en un
+  // reemplazo dejaba el botón rebautizado a mitad del flujo.
+  const rotuloOriginal = btn.textContent ?? 'Subir comprobante';
+
+  /** Devuelve el formulario a como estaba antes de elegir nada. */
+  function olvidarArchivo(): void {
+    archivo = null;
+    // También el campo, no solo la variable: el navegador solo emite «change»
+    // cuando el valor cambia, así que dejando el anterior puesto, volver a
+    // elegir EL MISMO archivo no avisaba a nadie y el formulario se quedaba
+    // mudo, con el botón apagado y sin más salida que recargar la página.
+    input.value = '';
+    info.classList.add('oculto');
+    info.innerHTML = '';
+    btn.disabled = true;
+  }
+
+  // Solo encuentra algo que cablear en la pantalla del reemplazo; en la otra,
+  // el formulario ya está abierto y no hay nada que plegar.
+  cablearReemplazo(olvidarArchivo);
 
   // Soporte para Arrastrar y Soltar (Drag & Drop)
   area.addEventListener('dragover', (e) => {
@@ -181,20 +249,27 @@ export function setupUpload(pRaw: Participante, apiBase: string, baseUrl: string
   });
 
   function procesar(f: File) {
-    if (f.type !== 'application/pdf') {
-      toast('Solo se aceptan archivos PDF.', 'error');
-      return;
-    }
+    if (f.type !== 'application/pdf') return rechazar('Solo se aceptan archivos PDF.');
     // El límite es el mismo que aplica el Worker. Antes eran 3 MB aquí y 5 allá,
     // así que un comprobante de 4 MB se rechazaba sin llegar a salir del navegador.
-    if (f.size > MAX_PDF_BYTES) {
-      toast(`El archivo supera los ${MAX_PDF_MB} MB.`, 'error');
-      return;
-    }
+    if (f.size > MAX_PDF_BYTES) return rechazar(`El archivo supera los ${MAX_PDF_MB} MB.`);
     archivo = f;
     info.classList.remove('oculto');
     info.innerHTML = archivoElegido(escapeHTML(f.name), (f.size / 1048576).toFixed(2));
     btn.disabled = false;
+  }
+
+  /**
+   * Explica por qué no vale y deja el campo listo para volver a intentarlo.
+   *
+   * Lo segundo importa tanto como lo primero: sin vaciar el campo, quien
+   * exportaba otra vez su comprobante con el mismo nombre —lo más natural tras
+   * leer «supera los 5 MB»— y lo volvía a elegir no recibía respuesta alguna,
+   * porque para el navegador el valor no había cambiado.
+   */
+  function rechazar(motivo: string): void {
+    toast(motivo, 'error');
+    input.value = '';
   }
 
   btn.addEventListener('click', async () => {
@@ -202,6 +277,11 @@ export function setupUpload(pRaw: Participante, apiBase: string, baseUrl: string
     enviando = true;
     btn.disabled = true;
     btn.textContent = 'Subiendo...';
+    // La petición ya no se puede retirar, así que el botón de cancelar dejaría
+    // el formulario plegado mientras el archivo termina de subirse igualmente:
+    // prometería «dejar el comprobante que ya envié» justo cuando eso ha dejado
+    // de estar en su mano.
+    if (btnCancelar) btnCancelar.disabled = true;
 
     // Mostrar barra de progreso
     const boxProg = document.getElementById('box-progreso');
@@ -213,7 +293,8 @@ export function setupUpload(pRaw: Participante, apiBase: string, baseUrl: string
     const permitirOtroIntento = () => {
       enviando = false;
       btn.disabled = false;
-      btn.textContent = 'Subir comprobante';
+      btn.textContent = rotuloOriginal;
+      if (btnCancelar) btnCancelar.disabled = false;
       if (boxProg) boxProg.classList.add('oculto');
       if (barra) barra.style.width = '0%';
       if (txtPct) txtPct.textContent = '0%';
