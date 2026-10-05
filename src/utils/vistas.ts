@@ -178,6 +178,23 @@ function cablearReemplazo(limpiarSeleccion: () => void): void {
   });
 }
 
+/**
+ * ¿Parece un PDF?
+ *
+ * El tipo que da el navegador sale del sistema, y no siempre es
+ * `application/pdf`: según el gestor de archivos del teléfono —o un PDF bajado
+ * de WhatsApp— llega vacío, como `application/x-pdf` o como
+ * `application/octet-stream`. Rechazar esos casos dejaba fuera un PDF válido
+ * sin que la persona pudiera hacer nada. En ellos decide la extensión; y en
+ * todos, el Worker comprueba la firma `%PDF-` del contenido, que es la
+ * verdadera defensa.
+ */
+export function pareceUnPdf(archivo: File): boolean {
+  if (archivo.type === 'application/pdf') return true;
+  const tipoDudoso = ['', 'application/x-pdf', 'application/octet-stream'].includes(archivo.type);
+  return tipoDudoso && archivo.name.toLowerCase().endsWith('.pdf');
+}
+
 // ── Controlador de Eventos para Carga de PDF ────────────────────
 // Gestiona el arrastrar, soltar, teclado (a11y), progreso visual y transición sin recarga
 export function setupUpload(pRaw: Participante, apiBase: string, baseUrl: string, tokenPortal: string): void {
@@ -249,7 +266,7 @@ export function setupUpload(pRaw: Participante, apiBase: string, baseUrl: string
   });
 
   function procesar(f: File) {
-    if (f.type !== 'application/pdf') return rechazar('Solo se aceptan archivos PDF.');
+    if (!pareceUnPdf(f)) return rechazar('Solo se aceptan archivos PDF.');
     // El límite es el mismo que aplica el Worker. Antes eran 3 MB aquí y 5 allá,
     // así que un comprobante de 4 MB se rechazaba sin llegar a salir del navegador.
     if (f.size > MAX_PDF_BYTES) return rechazar(`El archivo supera los ${MAX_PDF_MB} MB.`);
