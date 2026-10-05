@@ -321,6 +321,29 @@ describe('setupUpload', () => {
     expect(textoDeLosToasts()).toContain('Solo se aceptan archivos PDF');
   });
 
+  // Hay gestores de archivos del teléfono que entregan un PDF sin tipo, como
+  // `application/x-pdf` o como `application/octet-stream`. Rechazarlo dejaba
+  // fuera un comprobante válido; el Worker comprueba después la firma %PDF-.
+  it.each(['', 'application/x-pdf', 'application/octet-stream'])(
+    'acepta un .pdf que llega con el tipo «%s»',
+    async (tipo) => {
+      const { input, boton } = await prepararFormulario();
+
+      elegir(input, new File([new Uint8Array(8)], 'Comprobante.PDF', { type: tipo }));
+
+      expect(boton.disabled).toBe(false);
+    },
+  );
+
+  it('con un tipo dudoso, lo que no se llama .pdf sigue sin aceptarse', async () => {
+    const { input, boton } = await prepararFormulario();
+
+    elegir(input, new File([new Uint8Array(8)], 'foto.jpg', { type: 'application/octet-stream' }));
+
+    expect(boton.disabled).toBe(true);
+    expect(textoDeLosToasts()).toContain('Solo se aceptan archivos PDF');
+  });
+
   it('rechaza en el navegador lo que el Worker rechazaría por tamaño', async () => {
     const { input, boton } = await prepararFormulario();
 
