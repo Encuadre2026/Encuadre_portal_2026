@@ -845,6 +845,25 @@ body {
   border-top: 1px solid var(--borde);
 }
 
+/* ── Reconocimiento ───────────────────────────────────────────
+   La tarjeta que aparece al terminar el Encuentro: el enlace para
+   bajar la constancia, o el motivo por el que todavía no. Hereda
+   el tamaño y el color del resto del texto secundario del portal;
+   lo único propio es el aire bajo el párrafo, para que el botón no
+   se pegue a la frase que lo explica. */
+.reconocimiento-texto {
+  font-size: 14px;
+  color: var(--texto-suave);
+  line-height: 1.7;
+  margin-bottom: 18px;
+}
+
+.reconocimiento-recuento {
+  font-size: 13px;
+  color: var(--texto-muted);
+  margin: 0;
+}
+
 .upload-reemplazo-texto {
   font-size: 13px;
   color: var(--texto-suave);

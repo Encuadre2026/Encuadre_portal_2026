@@ -7,6 +7,7 @@ import {
   formularioComprobante,
   paginaError,
   tarjetaDatos,
+  tarjetaReconocimiento,
   vistaAprobado,
   vistaPendiente,
 } from './plantillas';
@@ -310,5 +311,56 @@ describe('el perfil no viaja como nombre de clase', () => {
     const html = vistaAprobado({ ...P, perfil: 'Profesor' }, estadoDe(true, true), '[QR]', '');
     // Uno en la tarjeta de datos y otro en el gafete.
     expect(html.match(/data-perfil="profesor"/g)).toHaveLength(2);
+  });
+});
+
+// ── Reconocimiento ──────────────────────────────────────────────
+describe('la tarjeta del reconocimiento', () => {
+  const ENLACE = 'https://api.ejemplo/api/participante/reconocimiento?id=abc123';
+
+  it('a quien ya le toca le da el enlace de descarga', () => {
+    const html = tarjetaReconocimiento({ ...P, reconocimiento_disponible: 1 }, ENLACE);
+
+    expect(html).toContain(ENLACE);
+    expect(html).toContain('Descargar mi reconocimiento');
+    // El `download` no se pone a propósito: el archivo viene de otro dominio y
+    // ahí el navegador lo ignora. Quien lo entrega como descarga es la cabecera
+    // del Worker. Dejarlo escrito haría creer que hace algo.
+    expect(html).not.toContain('download=');
+  });
+
+  it('a quien todavía no, le dice por qué y cuánto lleva', () => {
+    const html = tarjetaReconocimiento(
+      {
+        ...P,
+        reconocimiento_disponible: 0,
+        reconocimiento_motivo: 'Te faltan 2 asistencias por registrar.',
+        asistencias: 1,
+      },
+      ENLACE,
+    );
+
+    expect(html).toContain('Te faltan 2 asistencias por registrar.');
+    expect(html).toContain('Llevas 1 asistencia registrada');
+    // Y sobre todo: no se le ofrece un enlace que el Worker va a rechazar.
+    expect(html).not.toContain(ENLACE);
+  });
+
+  it('con varias asistencias concuerda en plural', () => {
+    const html = tarjetaReconocimiento(
+      { ...P, reconocimiento_disponible: 0, reconocimiento_motivo: 'Te falta una.', asistencias: 2 },
+      ENLACE,
+    );
+    expect(html).toContain('Llevas 2 asistencias registradas');
+  });
+
+  it('sin recuento no se inventa un cero', () => {
+    // `asistencias` ausente es «no lo sé», no «ninguna»: afirmarlo sería
+    // decirle a alguien que no fue cuando quizá el dato no llegó.
+    const html = tarjetaReconocimiento(
+      { ...P, reconocimiento_disponible: 0, reconocimiento_motivo: 'Tu pago todavía no está aprobado.' },
+      ENLACE,
+    );
+    expect(html).not.toContain('Llevas');
   });
 });

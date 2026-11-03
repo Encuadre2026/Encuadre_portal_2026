@@ -355,6 +355,55 @@ export function comprobanteRecibido(): string {
       </div>`;
 }
 
+/**
+ * El reconocimiento del Encuentro: el enlace para bajarlo, o lo que falta.
+ *
+ * Aparece después del Encuentro, cuando el Worker empieza a emitir
+ * `reconocimiento_disponible`. Antes de eso el campo no viaja y la tarjeta no
+ * se pinta, que es como se veía el portal hasta ahora.
+ *
+ * Cuando todavía no le toca se enseña igual, con el motivo y el recuento: quien
+ * entra a buscar su constancia y no encuentra nada supone que el portal está
+ * roto, y escribe. Con el motivo delante —«te faltan 2 asistencias»— sabe qué
+ * pasó, y el recuento le deja comprobarlo.
+ *
+ * El enlace es un `<a>` normal y no lleva `download`: el archivo viene de otro
+ * dominio —el Worker—, y ahí el navegador ignora ese atributo. Quien manda es
+ * la cabecera `Content-Disposition` de la respuesta, que ya lo entrega como
+ * descarga y con el nombre de la persona.
+ */
+export function tarjetaReconocimiento(p: Participante, enlace: string): string {
+  const disponible = p.reconocimiento_disponible == 1 || p.reconocimiento_disponible === true;
+
+  if (disponible) {
+    return `
+      <div class="card card-separada">
+        <p class="card-title">Tu reconocimiento</p>
+        <p class="reconocimiento-texto">
+          Gracias por acompañarnos. Tu reconocimiento del 36 Encuentro Nacional de
+          Escuelas de Diseño ya está listo, en PDF y para imprimir.
+        </p>
+        <a class="btn btn-primary" href="${enlace}" aria-label="Descargar mi reconocimiento en PDF">
+          Descargar mi reconocimiento
+        </a>
+      </div>`;
+  }
+
+  // El recuento solo si se sabe: sin el dato, un «0 asistencias» sería una
+  // afirmación que nadie ha comprobado.
+  const recuento =
+    typeof p.asistencias === 'number'
+      ? `<p class="reconocimiento-recuento">Llevas ${p.asistencias} asistencia${p.asistencias === 1 ? '' : 's'} registrada${p.asistencias === 1 ? '' : 's'}.</p>`
+      : '';
+
+  return `
+      <div class="card card-separada">
+        <p class="card-title">Tu reconocimiento</p>
+        <p class="reconocimiento-texto">${p.reconocimiento_motivo}</p>
+        ${recuento}
+      </div>`;
+}
+
 /** Formulario de subida. Los eventos los cablea `setupUpload`. */
 export function formularioComprobante(): string {
   return `
@@ -392,13 +441,20 @@ export function paginaError(titulo: string, desc: string, conReintento: boolean)
 }
 
 /** Vista completa de quien ya tiene el pago aprobado. */
-export function vistaAprobado(p: Participante, estado: EstadoPortal, qr: string, baseUrl: string): string {
+export function vistaAprobado(
+  p: Participante,
+  estado: EstadoPortal,
+  qr: string,
+  baseUrl: string,
+  reconocimiento = '',
+): string {
   return `
     <div class="dashboard-layout">
       <div class="dashboard-left">
         ${bannerEstado(estado)}
         ${tarjetaDatos(p)}
         ${tarjetaQr(p, qr)}
+        ${reconocimiento}
       </div>
       <div class="dashboard-right">
         ${gafete(p, qr, baseUrl)}
@@ -415,10 +471,11 @@ export function vistaAprobado(p: Participante, estado: EstadoPortal, qr: string,
  * acreditación. Tampoco lleva formulario de subida: no hay pago pendiente que
  * justifique pedirle un comprobante.
  */
-export function vistaSoloDatos(p: Participante, estado: EstadoPortal): string {
+export function vistaSoloDatos(p: Participante, estado: EstadoPortal, reconocimiento = ''): string {
   return `
     ${bannerEstado(estado)}
-    ${tarjetaDatos(p)}`;
+    ${tarjetaDatos(p)}
+    ${reconocimiento}`;
 }
 
 /** Vista de quien todavía no tiene el pago aprobado. */
