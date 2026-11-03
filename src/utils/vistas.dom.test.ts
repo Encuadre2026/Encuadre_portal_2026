@@ -276,6 +276,69 @@ describe('renderPortal con un registro de asamblea', () => {
   });
 });
 
+describe('el reconocimiento en el portal', () => {
+  const APROBADO = { ...P, pago_aprobado: 1 };
+
+  it('no se pinta mientras el Worker no diga nada de él', async () => {
+    // Es el portal de siempre: durante el Encuentro el campo no viaja, y una
+    // tarjeta vacía ahí solo generaría preguntas.
+    await renderPortal(APROBADO, 'https://api.test', '', 'tok123');
+    expect(hueco().textContent).not.toContain('Tu reconocimiento');
+  });
+
+  it('a quien le toca le da el enlace con su token, no con su folio', async () => {
+    await renderPortal(
+      { ...APROBADO, reconocimiento_disponible: 1, reconocimiento_motivo: null },
+      'https://api.test',
+      '',
+      'tok123',
+    );
+
+    const enlace = hueco().querySelector('a[href*="reconocimiento"]') as HTMLAnchorElement;
+    expect(enlace).not.toBeNull();
+    expect(enlace.href).toBe('https://api.test/api/participante/reconocimiento?id=tok123');
+    // El id_participante es secuencial y adivinable: no autentica nada.
+    expect(enlace.href).not.toContain('ENC-042');
+  });
+
+  it('a quien todavía no, le explica qué falta y no le ofrece el enlace', async () => {
+    await renderPortal(
+      {
+        ...APROBADO,
+        reconocimiento_disponible: 0,
+        reconocimiento_motivo: 'Te faltan 2 asistencias por registrar.',
+        asistencias: 1,
+      },
+      'https://api.test',
+      '',
+      'tok123',
+    );
+
+    expect(hueco().textContent).toContain('Te faltan 2 asistencias');
+    expect(hueco().querySelector('a[href*="reconocimiento"]')).toBeNull();
+  });
+
+  it('también aparece en la vista de quien no tiene QR que enseñar', async () => {
+    // La asamblea acreditada que dijo que no asiste cae en `vistaSoloDatos`, y
+    // su reconocimiento no depende de asistencias.
+    await renderPortal(
+      {
+        ...P,
+        pago_aprobado: 1,
+        requiere_pago: 0,
+        asiste_encuentro: 0,
+        reconocimiento_disponible: 1,
+        reconocimiento_motivo: null,
+      },
+      'https://api.test',
+      '',
+      'tok123',
+    );
+
+    expect(hueco().querySelector('a[href*="reconocimiento"]')).not.toBeNull();
+  });
+});
+
 describe('renderError', () => {
   it('solo cablea el reintento cuando se le pasa uno', () => {
     const reintentar = vi.fn();

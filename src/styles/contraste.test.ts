@@ -88,6 +88,16 @@ const PARES = [
   { texto: ['.gafete-fecha', 'color'], fondo: ['.gafete-top', 'background'], nota: 'la fecha del evento en el gafete' },
   { texto: ['.gafete-id-label', 'color'], fondo: ['.gafete-top', 'background'], nota: 'la etiqueta del ID del gafete' },
   {
+    texto: ['.reconocimiento-texto', 'color'],
+    fondo: ['.card', 'background'],
+    nota: 'la explicación del reconocimiento',
+  },
+  {
+    texto: ['.reconocimiento-recuento', 'color'],
+    fondo: ['.card', 'background'],
+    nota: 'cuántas asistencias lleva quien todavía no lo tiene',
+  },
+  {
     texto: ['.gafete-taller-label', 'color'],
     fondo: ['.gafete-body', 'background'],
     nota: 'la etiqueta del taller en el gafete',

@@ -48,6 +48,28 @@ export interface Participante {
   taller_preferencia?: string | null;
   /** Solo la asamblea: `1` si dijo que asistirá al Encuentro. */
   asiste_encuentro?: number | boolean | null;
+  /** Cuántas veces se le pasó lista durante el Encuentro. */
+  asistencias?: number;
+  /** En cuántos días distintos, contados en la hora de Aguascalientes. */
+  dias_asistidos?: number;
+  /**
+   * Si ya puede descargar su reconocimiento.
+   *
+   * Lo decide el Worker, no el portal. La regla —un mínimo de asistencias,
+   * salvo en la asamblea, que lo recibe entera— se configura desde Cloudflare y
+   * puede moverse después del Encuentro; el portal se despliega aparte, así que
+   * una copia de la regla aquí enseñaría el reparto viejo sin que nadie lo note.
+   *
+   * Opcional porque el Worker lo emite desde noviembre de 2026: si faltara
+   * —una respuesta cacheada, un despliegue a medias—, lo que procede es no
+   * enseñar la tarjeta, que es como se veía el portal hasta ahora.
+   */
+  reconocimiento_disponible?: number | boolean;
+  /**
+   * Por qué todavía no lo tiene, en una frase ya redactada para enseñarla tal
+   * cual. `null` cuando sí lo tiene.
+   */
+  reconocimiento_motivo?: string | null;
 }
 
 /**

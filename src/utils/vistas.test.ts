@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { sanearParticipante } from './vistas';
-import { tarjetaDatos, vistaAprobado, vistaPendiente, vistaSoloDatos, estadoDe } from './plantillas';
+import {
+  tarjetaDatos,
+  tarjetaReconocimiento,
+  vistaAprobado,
+  vistaPendiente,
+  vistaSoloDatos,
+  estadoDe,
+} from './plantillas';
 import type { Participante } from './api';
 
 /**
@@ -47,6 +54,7 @@ const CARGAS: Record<CampoDeTexto, string> = {
   fecha_registro: CARGA,
   fecha_expiracion: CARGA,
   taller_preferencia: CARGA,
+  reconocimiento_motivo: CARGA,
 };
 
 const BASE: Participante = {
@@ -82,6 +90,9 @@ function todoElHtml(p: Participante): string {
     tarjetaDatos(asamblea),
     vistaAprobado(asamblea, estadoAsamblea, '', ''),
     vistaSoloDatos(asamblea, estadoAsamblea),
+    // Con el reconocimiento todavía no disponible, que es la rama donde se
+    // pinta el motivo. La otra no enseña texto del servidor: solo el enlace.
+    tarjetaReconocimiento({ ...p, reconocimiento_disponible: 0 }, 'https://api.ejemplo/x'),
   ].join('\n');
 }
 

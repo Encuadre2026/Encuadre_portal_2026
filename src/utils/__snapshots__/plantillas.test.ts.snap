@@ -58,6 +58,7 @@ exports[`taller de la asamblea > la vista de la asamblea mantiene su forma 1`] =
           </a>
         </div>
       </div>
+        
       </div>
       <div class="dashboard-right">
         
@@ -335,6 +336,7 @@ exports[`vistas completas > la de pago aprobado mantiene su forma 1`] = `
           </a>
         </div>
       </div>
+        
       </div>
       <div class="dashboard-right">
         

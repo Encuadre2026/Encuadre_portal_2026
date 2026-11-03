@@ -6,6 +6,7 @@ import {
   esSinCuota,
   estadoDe,
   paginaError,
+  tarjetaReconocimiento,
   vistaAprobado,
   vistaPendiente,
   vistaSoloDatos,
@@ -46,6 +47,12 @@ export function sanearParticipante(pRaw: Participante): Participante {
     // convertirlo en cadena vacía: `tallerDe` distingue entre «prefiere este
     // taller» y «no se le preguntó», y esa diferencia decide el rótulo.
     taller_preferencia: pRaw.taller_preferencia ? escapeHTML(pRaw.taller_preferencia) : pRaw.taller_preferencia,
+    // Lo redacta el Worker, no una persona, pero cruza la misma frontera y
+    // acaba igual en un `innerHTML`: la disciplina es escapar TODO lo que
+    // llega de fuera, no solo lo que hoy parece peligroso.
+    reconocimiento_motivo: pRaw.reconocimiento_motivo
+      ? escapeHTML(pRaw.reconocimiento_motivo)
+      : pRaw.reconocimiento_motivo,
     // `fecha_registro` y `fecha_expiracion` no se escapan porque no se pintan
     // en crudo: la primera pasa siempre por `formatFecha`, que devuelve lo que
     // produce `toLocaleDateString` —texto de fecha o «Invalid Date», nunca la
@@ -98,9 +105,17 @@ export async function renderPortal(
   // le espera— y el de la asamblea mientras nadie ha revisado su acreditación.
   // Van antes que la rama del pago porque ninguno de los dos debe dinero, así
   // que el estado del pago no dice nada útil sobre ellos.
+  // La tarjeta del reconocimiento solo existe si el Worker dice algo sobre él.
+  // Mientras no emita el campo —el Encuentro no ha terminado, o el despliegue
+  // va a medias— el portal se ve como se veía antes.
+  const reconocimiento =
+    p.reconocimiento_disponible === undefined
+      ? ''
+      : tarjetaReconocimiento(p, `${apiBase}/api/participante/reconocimiento?id=${encodeURIComponent(tokenPortal)}`);
+
   const esperaAprobacion = !requierePago && !aprobado;
   if (!asiste || esperaAprobacion) {
-    main.innerHTML = vistaSoloDatos(p, estado);
+    main.innerHTML = vistaSoloDatos(p, estado, reconocimiento);
     return;
   }
 
@@ -109,7 +124,7 @@ export async function renderPortal(
     // apariciones —tarjeta, gafete y descarga— son el mismo dibujo, y antes se
     // generaban por separado y en serie.
     const qr = await getQrUrl(p.id_participante, 500);
-    main.innerHTML = vistaAprobado(p, estado, qr, baseUrl);
+    main.innerHTML = vistaAprobado(p, estado, qr, baseUrl, reconocimiento);
     cablearImprimir();
   } else {
     main.innerHTML = vistaPendiente(p, estado, tieneComp);
